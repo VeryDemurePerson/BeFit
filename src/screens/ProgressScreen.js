@@ -132,7 +132,7 @@ const ProgressScreen = () => {
       });
       
       weeklyProgress.push({
-        week: W${8-i},
+        week: `W${8-i}`,
         workouts: weekWorkouts.length,
         duration: weekWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0)
       });
@@ -204,7 +204,7 @@ const ProgressScreen = () => {
                     style={[
                       styles.bar, 
                       { 
-                        height: ${height}%,
+                        height: `${height}%`,
                         backgroundColor: value > 0 ? '#007AFF' : '#E0E0E0'
                       }
                     ]} 
