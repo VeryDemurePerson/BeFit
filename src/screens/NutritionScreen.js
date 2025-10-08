@@ -9,7 +9,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -28,13 +28,13 @@ const NutritionScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-
+  // Daily targets - these could be made user-configurable
   const dailyTargets = {
-    calories: 2000, // Moderate baseline
-    protein: 150,   // grams
-    carbs: 250,     // grams  
-    fat: 65,        // grams
-    fiber: 25       // grams
+    calories: 2000,
+    protein: 150,
+    carbs: 250,
+    fat: 65,
+    fiber: 25
   };
 
   useFocusEffect(
@@ -59,6 +59,7 @@ const NutritionScreen = ({ navigation }) => {
       await fetchWeeklyHistory();
     } catch (error) {
       console.error('Error fetching nutrition data:', error);
+      Alert.alert('Error', 'Failed to load nutrition data');
     } finally {
       setLoading(false);
     }
@@ -67,7 +68,7 @@ const NutritionScreen = ({ navigation }) => {
   const fetchTodayNutrition = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const nutritionDoc = await getDoc(doc(db, 'nutrition', ${auth.currentUser.uid}_${today}));
+      const nutritionDoc = await getDoc(doc(db, 'nutrition', `${auth.currentUser.uid}_${today}`));
       
       if (nutritionDoc.exists()) {
         setTodayNutrition(nutritionDoc.data());
@@ -92,7 +93,7 @@ const NutritionScreen = ({ navigation }) => {
         const dateString = date.toISOString().split('T')[0];
         
         try {
-          const nutritionDoc = await getDoc(doc(db, 'nutrition', ${auth.currentUser.uid}_${dateString}));
+          const nutritionDoc = await getDoc(doc(db, 'nutrition', `${auth.currentUser.uid}_${dateString}`));
           weeklyData.push({
             date: dateString,
             dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
@@ -125,7 +126,7 @@ const NutritionScreen = ({ navigation }) => {
           <View 
             style={[
               styles.progressBar, 
-              { width: ${percentage}%, backgroundColor: color }
+              { width: `${percentage}%, backgroundColor: color` }
             ]} 
           />
         </View>
@@ -160,7 +161,7 @@ const NutritionScreen = ({ navigation }) => {
                 style={[
                   styles.bar, 
                   { 
-                    height: ${Math.min((day.calories / dailyTargets.calories) * 100, 100)}%,
+                    height: `${Math.min((day.calories / dailyTargets.calories) * 100, 100)}%`,
                     backgroundColor: day.calories >= dailyTargets.calories * 0.8 ? '#4CAF50' : '#2196F3'
                   }
                 ]} 
@@ -187,7 +188,7 @@ const NutritionScreen = ({ navigation }) => {
             <Text style={styles.quickMealIcon}>
               {mealType === 'Breakfast' ? '🌅' : 
                mealType === 'Lunch' ? '🥗' :
-               mealType === 'Dinner' ? '🍽️' : '🍎'}
+               mealType === 'Dinner' ? '🍽️' : '🎃'}
             </Text>
             <Text style={styles.quickMealText}>{mealType}</Text>
           </TouchableOpacity>
