@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,8 +7,9 @@ import {
   ScrollView,
   SafeAreaView,
   RefreshControl,
+  Alert,
 } from 'react-native';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 
 const HomeScreen = ({ navigation }) => {
@@ -72,7 +72,7 @@ const HomeScreen = ({ navigation }) => {
         workoutCount++;
         totalDuration += workout.duration || 0;
         
-        // Simple calorie estimation (can be improved)
+        // Simple calorie estimation
         const caloriesPerMinute = workout.type === 'cardio' ? 8 : 
                                   workout.type === 'strength' ? 6 : 4;
         estimatedCalories += (workout.duration || 0) * caloriesPerMinute;
@@ -103,14 +103,41 @@ const HomeScreen = ({ navigation }) => {
       
       // Sort in JavaScript and take first 5
       workoutList.sort((a, b) => {
-        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
-        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || Date.now());
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || Date.now());
         return dateB - dateA; 
       });
       
       setRecentWorkouts(workoutList.slice(0, 5));
     } catch (error) {
       console.error('Error fetching recent workouts:', error);
+    }
+  };
+
+  const handleWaterIntake = () => {
+    // Navigate to Water tab if it exists in bottom tabs
+    try {
+      navigation.navigate('Water');
+    } catch (error) {
+      Alert.alert(
+        'Water Tracker',
+        'Navigate to the Water tab to track your hydration!',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleLogFood = () => {
+    // Check if Nutrition screen exists
+    try {
+      // Try direct navigation first
+      navigation.navigate('Nutrition');
+    } catch (error) {
+      Alert.alert(
+        'Coming Soon',
+        'Nutrition tracking feature is under development!',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -134,19 +161,26 @@ const HomeScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  const RecentWorkoutItem = ({ workout }) => (
-    <View style={styles.recentWorkoutItem}>
-      <View style={styles.recentWorkoutInfo}>
-        <Text style={styles.recentWorkoutName}>{workout.exercise}</Text>
-        <Text style={styles.recentWorkoutDetails}>
-          {workout.duration} min • {workout.type}
+  const RecentWorkoutItem = ({ workout }) => {
+    // Safe date handling
+    const workoutDate = workout.createdAt?.toDate?.() 
+      ? new Date(workout.createdAt.toDate()) 
+      : new Date(workout.createdAt || Date.now());
+
+    return (
+      <View style={styles.recentWorkoutItem}>
+        <View style={styles.recentWorkoutInfo}>
+          <Text style={styles.recentWorkoutName}>{workout.exercise}</Text>
+          <Text style={styles.recentWorkoutDetails}>
+            {workout.duration} min • {workout.type}
+          </Text>
+        </View>
+        <Text style={styles.recentWorkoutDate}>
+          {workoutDate.toLocaleDateString()}
         </Text>
       </View>
-      <Text style={styles.recentWorkoutDate}>
-        {new Date(workout.createdAt.toDate()).toLocaleDateString()}
-      </Text>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -241,16 +275,15 @@ const HomeScreen = ({ navigation }) => {
             <ActionButton
               title="Water Intake"
               subtitle="Stay hydrated"
-              onPress={() => {}}
+              onPress={handleWaterIntake}
               color="#34C759"
             />
-
-<ActionButton
-  title="Log Food"
-  subtitle="Track nutrition"
-  onPress={() => navigation.navigate('Nutrition', { screen: 'AddMeal' })}
-  color="#FF4567"
-/>
+            <ActionButton
+              title="Log Food"
+              subtitle="Track nutrition"
+              onPress={handleLogFood}
+              color="#FF4567"
+            />
           </View>
         </View>
 

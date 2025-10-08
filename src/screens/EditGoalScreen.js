@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   View,
@@ -30,11 +29,11 @@ const EditGoalScreen = ({ navigation, route }) => {
 
   const getGoalIcon = (goalType) => {
     switch (goalType) {
-      case 'weeklyWorkouts': return ' 🏋️‍♂️';
-      case 'weeklyDuration': return '⏰ ';
-      case 'dailyWater': return ' 💧';
-      case 'monthlyWorkouts': return ' 🗓️';
-      default: return ' ✅';
+      case 'weeklyWorkouts': return '🏃‍♂️';
+      case 'weeklyDuration': return '⏱️';
+      case 'dailyWater': return '💧';
+      case 'monthlyWorkouts': return '📅';
+      default: return '🎯';
     }
   };
 
@@ -172,33 +171,33 @@ const EditGoalScreen = ({ navigation, route }) => {
 
         {/* Goal Tips */}
         <View style={styles.tipsContainer}>
-          <Text style={styles.tipsTitle}> Tips</Text>
+          <Text style={styles.tipsTitle}>💡 Tips</Text>
           {goalType === 'weeklyWorkouts' && (
             <>
-              <Text style={styles.tipText}> Beginners: Start with 2-3 workouts per week</Text>
-              <Text style={styles.tipText}> Intermediate: Aim for 3-4 workouts per week</Text>
-              <Text style={styles.tipText}> Advanced: 4-5 workouts per week</Text>
+              <Text style={styles.tipText}>• Beginners: Start with 2-3 workouts per week</Text>
+              <Text style={styles.tipText}>• Intermediate: Aim for 3-4 workouts per week</Text>
+              <Text style={styles.tipText}>• Advanced: 4-5 workouts per week</Text>
             </>
           )}
           {goalType === 'weeklyDuration' && (
             <>
-              <Text style={styles.tipText}>  WHO recommends 150 minutes per week</Text>
-              <Text style={styles.tipText}>  Break it down: 30 min x 5 days</Text>
-              <Text style={styles.tipText}> Include both cardio and strength training</Text>
+              <Text style={styles.tipText}>• WHO recommends 150 minutes per week</Text>
+              <Text style={styles.tipText}>• Break it down: 30 min x 5 days</Text>
+              <Text style={styles.tipText}>• Include both cardio and strength training</Text>
             </>
           )}
           {goalType === 'dailyWater' && (
             <>
-              <Text style={styles.tipText}> General guideline: 8 glasses (8oz each)</Text>
-              <Text style={styles.tipText}> More if you exercise regularly</Text>
-              <Text style={styles.tipText}>  Listen to your body's thirst signals</Text>
+              <Text style={styles.tipText}>• General guideline: 8 glasses (8oz each)</Text>
+              <Text style={styles.tipText}>• More if you exercise regularly</Text>
+              <Text style={styles.tipText}>• Listen to your body's thirst signals</Text>
             </>
           )}
           {goalType === 'monthlyWorkouts' && (
             <>
-              <Text style={styles.tipText}> Consistency is key for progress</Text>
-              <Text style={styles.tipText}> Allow rest days for recovery</Text>
-              <Text style={styles.tipText}> Gradually increase as you build habits</Text>
+              <Text style={styles.tipText}>• Consistency is key for progress</Text>
+              <Text style={styles.tipText}>• Allow rest days for recovery</Text>
+              <Text style={styles.tipText}>• Gradually increase as you build habits</Text>
             </>
           )}
         </View>

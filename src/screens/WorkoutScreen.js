@@ -1,4 +1,4 @@
-
+// src/screens/WorkoutScreen.js - Updated with Edit/Delete functionality
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -19,7 +19,7 @@ const WorkoutScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  
+  // Refresh workouts when screen comes into focus (after adding/editing a workout)
   useFocusEffect(
     React.useCallback(() => {
       fetchWorkouts();
@@ -45,14 +45,15 @@ const WorkoutScreen = ({ navigation }) => {
       
       // Sort in JavaScript instead of Firestore
       workoutList.sort((a, b) => {
-        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
-        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
-        return dateB - dateA; 
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt || Date.now());
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt || Date.now());
+        return dateB - dateA; // Most recent first
       });
       
       setWorkouts(workoutList);
     } catch (error) {
       console.error('Error fetching workouts:', error);
+      Alert.alert('Error', 'Failed to load workouts');
     } finally {
       setLoading(false);
     }
@@ -85,7 +86,7 @@ const WorkoutScreen = ({ navigation }) => {
             try {
               await deleteDoc(doc(db, 'workouts', workout.id));
               Alert.alert('Success', 'Workout deleted successfully!');
-              fetchWorkouts(); 
+              fetchWorkouts(); // Refresh the list
             } catch (error) {
               console.error('Error deleting workout:', error);
               Alert.alert('Error', 'Failed to delete workout');
@@ -150,7 +151,7 @@ const WorkoutScreen = ({ navigation }) => {
       });
     }
 
-    
+    // Legacy fields support (for old workouts)
     if (workout.sets && !workout.detectedFields?.sets) {
       details.push(
         <View key="sets" style={styles.workoutDetailItem}>
@@ -181,70 +182,85 @@ const WorkoutScreen = ({ navigation }) => {
     return details;
   };
 
-  const WorkoutCard = ({ workout }) => (
-    <View style={styles.workoutCard}>
-      <View style={styles.workoutHeader}>
-        <Text style={styles.workoutExercise}>{workout.exercise}</Text>
-        <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={styles.editButton}
-            onPress={() => navigateToEditWorkout(workout)}
-          >
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.deleteButton}
-            onPress={() => deleteWorkout(workout)}
-          >
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+  const WorkoutCard = ({ workout }) => {
+    // Safe date handling
+    const workoutDate = workout.createdAt?.toDate?.() 
+      ? new Date(workout.createdAt.toDate()) 
+      : new Date(workout.createdAt || Date.now());
 
-      <View style={styles.workoutSubHeader}>
-        <View style={[styles.workoutTypeBadge, { backgroundColor: getWorkoutTypeColor(workout.type) }]}>
-          <Text style={styles.workoutType}>{workout.type}</Text>
+    return (
+      <View style={styles.workoutCard}>
+        <View style={styles.workoutHeader}>
+          <Text style={styles.workoutExercise}>{workout.exercise}</Text>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity 
+              style={styles.editButton}
+              onPress={() => navigateToEditWorkout(workout)}
+            >
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.deleteButton}
+              onPress={() => deleteWorkout(workout)}
+            >
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        {/* Show additional badge if workout has special fields */}
-        {workout.detectedFields && Object.keys(workout.detectedFields).length > 0 && (
-          <View style={styles.smartBadge}>
-            <Text style={styles.smartBadgeText}>SMART</Text>
+
+        <View style={styles.workoutSubHeader}>
+          <View style={[styles.workoutTypeBadge, { backgroundColor: getWorkoutTypeColor(workout.type) }]}>
+            <Text style={styles.workoutType}>{workout.type}</Text>
+          </View>
+          {/* Show additional badge if workout has special fields */}
+          {workout.detectedFields && Object.keys(workout.detectedFields).length > 0 && (
+            <View style={styles.smartBadge}>
+              <Text style={styles.smartBadgeText}>SMART</Text>
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.workoutDetails}>
+          {renderWorkoutDetails(workout)}
+        </View>
+        
+        {workout.notes && (
+          <View style={styles.notesContainer}>
+            <Text style={styles.workoutNotes}>{workout.notes}</Text>
           </View>
         )}
+        
+        <Text style={styles.workoutDate}>
+          {workoutDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+          {workout.updatedAt && ' (edited)'}
+        </Text>
       </View>
-      
-      <View style={styles.workoutDetails}>
-        {renderWorkoutDetails(workout)}
-      </View>
-      
-      {workout.notes && (
-        <View style={styles.notesContainer}>
-          <Text style={styles.workoutNotes}>{workout.notes}</Text>
-        </View>
-      )}
-      
-      <Text style={styles.workoutDate}>
-        {new Date(workout.createdAt.toDate()).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })}
-        {workout.updatedAt && ' (edited)'}
-      </Text>
-    </View>
-  );
+    );
+  };
 
   const WorkoutStats = () => {
     const totalWorkouts = workouts.length;
     const totalDuration = workouts.reduce((sum, workout) => sum + (workout.duration || 0), 0);
+    
     const thisWeek = workouts.filter(workout => {
-      const workoutDate = new Date(workout.createdAt.toDate());
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return workoutDate >= weekAgo;
+      try {
+        const workoutDate = workout.createdAt?.toDate?.() 
+          ? new Date(workout.createdAt.toDate()) 
+          : new Date(workout.createdAt || Date.now());
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return workoutDate >= weekAgo;
+      } catch (error) {
+        console.warn('Error calculating workout date:', error);
+        return false;
+      }
     }).length;
 
     return (

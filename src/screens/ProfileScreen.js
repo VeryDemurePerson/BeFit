@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -57,6 +56,7 @@ const ProfileScreen = ({ navigation }) => {
       await calculateUserStats();
     } catch (error) {
       console.error('Error fetching user data:', error);
+      Alert.alert('Error', 'Failed to load profile data');
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,24 @@ const ProfileScreen = ({ navigation }) => {
         last7Days.push(date.toDateString());
       }
 
-      const workoutDays = new Set(workouts.map(w => new Date(w.createdAt.toDate()).toDateString()));
+      // Safe date handling for workout days
+      const workoutDays = new Set(
+        workouts
+          .filter(w => w.createdAt) // Filter out workouts without createdAt
+          .map(w => {
+            try {
+              const date = w.createdAt?.toDate?.() 
+                ? new Date(w.createdAt.toDate()) 
+                : new Date(w.createdAt || Date.now());
+              return date.toDateString();
+            } catch (error) {
+              console.warn('Invalid workout date:', error);
+              return null;
+            }
+          })
+          .filter(date => date !== null) // Remove null values
+      );
+
       let currentStreak = 0;
       for (const day of last7Days) {
         if (workoutDays.has(day)) {
@@ -116,13 +133,20 @@ const ProfileScreen = ({ navigation }) => {
         console.log('Could not fetch water data:', waterError);
       }
 
+      // Safe string capitalization
+      const formattedWorkoutType = favoriteWorkoutType && favoriteWorkoutType !== 'None'
+        ? favoriteWorkoutType.charAt(0).toUpperCase() + favoriteWorkoutType.slice(1)
+        : 'None';
+
       setStats({
         totalWorkouts: workouts.length,
         totalDuration,
         totalWaterGlasses,
-        joinDate: userData?.createdAt ? new Date(userData.createdAt.toDate()).toLocaleDateString() : 'Unknown',
+        joinDate: userData?.createdAt?.toDate 
+          ? new Date(userData.createdAt.toDate()).toLocaleDateString() 
+          : 'Unknown',
         currentStreak,
-        favoriteWorkoutType: favoriteWorkoutType.charAt(0).toUpperCase() + favoriteWorkoutType.slice(1)
+        favoriteWorkoutType: formattedWorkoutType
       });
     } catch (error) {
       console.error('Error calculating user stats:', error);
@@ -504,4 +528,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileScreen;
+export default ProfileScreen

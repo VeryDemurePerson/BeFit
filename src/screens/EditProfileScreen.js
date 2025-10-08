@@ -30,11 +30,11 @@ const EditGoalScreen = ({ navigation, route }) => {
 
   const getGoalIcon = (goalType) => {
     switch (goalType) {
-      case 'weeklyWorkouts': return '';
-      case 'weeklyDuration': return '';
-      case 'dailyWater': return '';
-      case 'monthlyWorkouts': return '';
-      default: return '';
+      case 'weeklyWorkouts': return '🏃‍♂️';
+      case 'weeklyDuration': return '⏱️';
+      case 'dailyWater': return '💧';
+      case 'monthlyWorkouts': return '📅';
+      default: return '🎯';
     }
   };
 

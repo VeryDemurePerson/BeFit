@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   View,
@@ -99,7 +98,7 @@ const EditWorkoutScreen = ({ navigation, route }) => {
                 styles.typeButtonText,
                 editedWorkout.type === type && styles.typeButtonTextActive
               ]}>
-                {type.charAt(0).toUpperCase() + type.slice(1)}
+                {type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Unknown'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -177,14 +176,17 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         <View style={styles.originalDateContainer}>
           <Text style={styles.originalDateLabel}>Original Date:</Text>
           <Text style={styles.originalDateValue}>
-            {new Date(workout.createdAt.toDate()).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
+            {workout.createdAt?.toDate 
+              ? new Date(workout.createdAt.toDate()).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              : 'Unknown date'
+            }
           </Text>
         </View>
 

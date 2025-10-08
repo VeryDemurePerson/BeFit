@@ -1,4 +1,4 @@
-
+// src/screens/AddWorkoutScreen.js - Dynamic Exercise-Specific Form
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -13,7 +13,7 @@ import {
 import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 
-
+// Exercise database with specific fields for each exercise type
 const EXERCISE_DATABASE = {
   // Cardio exercises
   'running': {
