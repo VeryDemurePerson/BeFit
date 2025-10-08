@@ -67,7 +67,7 @@ const NutritionScreen = ({ navigation }) => {
   const fetchTodayNutrition = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const nutritionDoc = await getDoc(doc(db, 'nutrition', ${auth.currentUser.uid}_${today}));
+      const nutritionDoc = await getDoc(doc(db, 'nutrition', `${auth.currentUser.uid}_${today}`));
       
       if (nutritionDoc.exists()) {
         setTodayNutrition(nutritionDoc.data());
@@ -92,7 +92,7 @@ const NutritionScreen = ({ navigation }) => {
         const dateString = date.toISOString().split('T')[0];
         
         try {
-          const nutritionDoc = await getDoc(doc(db, 'nutrition', ${auth.currentUser.uid}_${dateString}));
+          const nutritionDoc = await getDoc(doc(db, 'nutrition', `${auth.currentUser.uid}_${dateString}`));
           weeklyData.push({
             date: dateString,
             dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
@@ -125,7 +125,7 @@ const NutritionScreen = ({ navigation }) => {
           <View 
             style={[
               styles.progressBar, 
-              { width: ${percentage}%, backgroundColor: color }
+              { width: `${percentage}%`, backgroundColor: color }
             ]} 
           />
         </View>
@@ -160,7 +160,7 @@ const NutritionScreen = ({ navigation }) => {
                 style={[
                   styles.bar, 
                   { 
-                    height: ${Math.min((day.calories / dailyTargets.calories) * 100, 100)}%,
+                    height: `${Math.min((day.calories / dailyTargets.calories) * 100, 100)}%`,
                     backgroundColor: day.calories >= dailyTargets.calories * 0.8 ? '#4CAF50' : '#2196F3'
                   }
                 ]} 
