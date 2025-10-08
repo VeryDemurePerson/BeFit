@@ -11,12 +11,12 @@ import {
 } from 'react-native';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
-
+ 
 const EditGoalScreen = ({ navigation, route }) => {
   const { goalType, currentValue } = route.params;
   const [newValue, setNewValue] = useState(currentValue.toString());
   const [loading, setLoading] = useState(false);
-
+ 
   const getGoalTitle = (goalType) => {
     switch (goalType) {
       case 'weeklyWorkouts': return 'Weekly Workouts';
@@ -26,17 +26,17 @@ const EditGoalScreen = ({ navigation, route }) => {
       default: return '';
     }
   };
-
+ 
   const getGoalIcon = (goalType) => {
     switch (goalType) {
-      case 'weeklyWorkouts': return '🏃‍♂️';
-      case 'weeklyDuration': return '⏱️';
-      case 'dailyWater': return '💧';
-      case 'monthlyWorkouts': return '📅';
-      default: return '🎯';
+      case 'weeklyWorkouts': return 'ðŸƒâ€â™‚ï¸';
+      case 'weeklyDuration': return 'â±ï¸';
+      case 'dailyWater': return 'ðŸ’§';
+      case 'monthlyWorkouts': return 'ðŸ“…';
+      default: return 'ðŸŽ¯';
     }
   };
-
+ 
   const getGoalHint = (goalType) => {
     switch (goalType) {
       case 'weeklyWorkouts': return 'How many workouts per week?';
@@ -46,7 +46,7 @@ const EditGoalScreen = ({ navigation, route }) => {
       default: return '';
     }
   };
-
+ 
   const getSuggestions = (goalType) => {
     switch (goalType) {
       case 'weeklyWorkouts': return ['2', '3', '4', '5'];
@@ -56,13 +56,13 @@ const EditGoalScreen = ({ navigation, route }) => {
       default: return [];
     }
   };
-
+ 
   const updateGoal = async () => {
     if (!newValue || isNaN(parseInt(newValue)) || parseInt(newValue) < 1) {
       Alert.alert('Error', 'Please enter a valid number greater than 0');
       return;
     }
-
+ 
     setLoading(true);
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
@@ -103,9 +103,9 @@ const EditGoalScreen = ({ navigation, route }) => {
       setLoading(false);
     }
   };
-
+ 
   const SuggestionButton = ({ value }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.suggestionButton, newValue === value && styles.suggestionButtonActive]}
       onPress={() => setNewValue(value)}
     >
@@ -114,7 +114,7 @@ const EditGoalScreen = ({ navigation, route }) => {
       </Text>
     </TouchableOpacity>
   );
-
+ 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -129,7 +129,7 @@ const EditGoalScreen = ({ navigation, route }) => {
           </Text>
         </TouchableOpacity>
       </View>
-
+ 
       {/* Content */}
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {/* Goal Info */}
@@ -138,13 +138,13 @@ const EditGoalScreen = ({ navigation, route }) => {
           <Text style={styles.goalTitle}>{getGoalTitle(goalType)}</Text>
           <Text style={styles.goalHint}>{getGoalHint(goalType)}</Text>
         </View>
-
+ 
         {/* Current Value Display */}
         <View style={styles.currentValueContainer}>
           <Text style={styles.currentValueLabel}>Current Goal:</Text>
           <Text style={styles.currentValue}>{currentValue}</Text>
         </View>
-
+ 
         {/* Input Field */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>New Goal Value</Text>
@@ -158,7 +158,7 @@ const EditGoalScreen = ({ navigation, route }) => {
             autoFocus={true}
           />
         </View>
-
+ 
         {/* Quick Suggestions */}
         <View style={styles.suggestionsContainer}>
           <Text style={styles.suggestionsTitle}>Quick Select:</Text>
@@ -168,36 +168,36 @@ const EditGoalScreen = ({ navigation, route }) => {
             ))}
           </View>
         </View>
-
+ 
         {/* Goal Tips */}
         <View style={styles.tipsContainer}>
-          <Text style={styles.tipsTitle}>💡 Tips</Text>
+          <Text style={styles.tipsTitle}>ðŸ’¡ Tips</Text>
           {goalType === 'weeklyWorkouts' && (
             <>
-              <Text style={styles.tipText}>• Beginners: Start with 2-3 workouts per week</Text>
-              <Text style={styles.tipText}>• Intermediate: Aim for 3-4 workouts per week</Text>
-              <Text style={styles.tipText}>• Advanced: 4-5 workouts per week</Text>
+              <Text style={styles.tipText}>â€¢ Beginners: Start with 2-3 workouts per week</Text>
+              <Text style={styles.tipText}>â€¢ Intermediate: Aim for 3-4 workouts per week</Text>
+              <Text style={styles.tipText}>â€¢ Advanced: 4-5 workouts per week</Text>
             </>
           )}
           {goalType === 'weeklyDuration' && (
             <>
-              <Text style={styles.tipText}>• WHO recommends 150 minutes per week</Text>
-              <Text style={styles.tipText}>• Break it down: 30 min x 5 days</Text>
-              <Text style={styles.tipText}>• Include both cardio and strength training</Text>
+              <Text style={styles.tipText}>â€¢ WHO recommends 150 minutes per week</Text>
+              <Text style={styles.tipText}>â€¢ Break it down: 30 min x 5 days</Text>
+              <Text style={styles.tipText}>â€¢ Include both cardio and strength training</Text>
             </>
           )}
           {goalType === 'dailyWater' && (
             <>
-              <Text style={styles.tipText}>• General guideline: 8 glasses (8oz each)</Text>
-              <Text style={styles.tipText}>• More if you exercise regularly</Text>
-              <Text style={styles.tipText}>• Listen to your body's thirst signals</Text>
+              <Text style={styles.tipText}>â€¢ General guideline: 8 glasses (8oz each)</Text>
+              <Text style={styles.tipText}>â€¢ More if you exercise regularly</Text>
+              <Text style={styles.tipText}>â€¢ Listen to your body's thirst signals</Text>
             </>
           )}
           {goalType === 'monthlyWorkouts' && (
             <>
-              <Text style={styles.tipText}>• Consistency is key for progress</Text>
-              <Text style={styles.tipText}>• Allow rest days for recovery</Text>
-              <Text style={styles.tipText}>• Gradually increase as you build habits</Text>
+              <Text style={styles.tipText}>â€¢ Consistency is key for progress</Text>
+              <Text style={styles.tipText}>â€¢ Allow rest days for recovery</Text>
+              <Text style={styles.tipText}>â€¢ Gradually increase as you build habits</Text>
             </>
           )}
         </View>
@@ -205,7 +205,7 @@ const EditGoalScreen = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-
+ 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -360,5 +360,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
-
+ 
 export default EditGoalScreen;
+ 
+ 
