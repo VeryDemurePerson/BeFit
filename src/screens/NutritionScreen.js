@@ -126,7 +126,7 @@ const NutritionScreen = ({ navigation }) => {
           <View 
             style={[
               styles.progressBar, 
-              { width: `${percentage}%, backgroundColor: color` }
+              { width: `${percentage}%`, backgroundColor: color }
             ]} 
           />
         </View>
