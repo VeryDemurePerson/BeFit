@@ -191,11 +191,11 @@ const GoalsScreen = ({ navigation }) => {
 
   const getGoalIcon = (goalType) => {
     switch (goalType) {
-      case 'weeklyWorkouts': return 'ðŸƒâ€â™‚ï¸';
-      case 'weeklyDuration': return 'â±ï¸';
-      case 'dailyWater': return 'ðŸ’§';
-      case 'monthlyWorkouts': return 'ðŸ“…';
-      default: return 'ðŸŽ¯';
+      case 'weeklyWorkouts': return ' 🗓️ ';
+      case 'weeklyDuration': return '  ⏰';
+      case 'dailyWater': return '  💧';
+      case 'monthlyWorkouts': return ' 🏋️ ';
+      default: return ' . ';
     }
   };
 
@@ -263,7 +263,7 @@ const GoalsScreen = ({ navigation }) => {
           style={styles.actionButton}
           onPress={() => navigation.navigate('Workout', { screen: 'AddWorkout' })}
         >
-          <Text style={styles.actionIcon}>ðŸ’ª</Text>
+          <Text style={styles.actionIcon}> 🏋️‍♂️</Text>
           <Text style={styles.actionText}>Add Workout</Text>
         </TouchableOpacity>
         
@@ -271,7 +271,7 @@ const GoalsScreen = ({ navigation }) => {
           style={styles.actionButton}
           onPress={addWaterGlass}
         >
-          <Text style={styles.actionIcon}>ðŸ’§</Text>
+          <Text style={styles.actionIcon}> 💧</Text>
           <Text style={styles.actionText}>Drink Water</Text>
         </TouchableOpacity>
         
@@ -279,7 +279,7 @@ const GoalsScreen = ({ navigation }) => {
           style={styles.actionButton}
           onPress={() => navigation.navigate('Progress')}
         >
-          <Text style={styles.actionIcon}>ðŸ“Š</Text>
+          <Text style={styles.actionIcon}> 🗓️ </Text>
           <Text style={styles.actionText}>View Progress</Text>
         </TouchableOpacity>
       </View>

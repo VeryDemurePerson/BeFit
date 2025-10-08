@@ -1,4 +1,4 @@
-// src/screens/AddMealScreen.js - Simple food logging
+
 import React, { useState } from 'react';
 import {
   View,
@@ -91,7 +91,7 @@ const AddMealScreen = ({ navigation, route }) => {
       // Calculate meal calories
       const mealCalories = validFoods.reduce((sum, food) => sum + parseInt(food.calories), 0);
 
-      // Estimate basic nutrients (simplified approximation)
+      // Estimate basic nutrients 
       const estimatedNutrients = {
         protein: Math.round(mealCalories * 0.15 / 4), // ~15% calories from protein
         carbs: Math.round(mealCalories * 0.50 / 4),   // ~50% calories from carbs

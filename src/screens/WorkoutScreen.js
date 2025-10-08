@@ -1,4 +1,4 @@
-// src/screens/WorkoutScreen.js - Updated with Edit/Delete functionality
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -19,7 +19,7 @@ const WorkoutScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Refresh workouts when screen comes into focus (after adding/editing a workout)
+  
   useFocusEffect(
     React.useCallback(() => {
       fetchWorkouts();
@@ -47,7 +47,7 @@ const WorkoutScreen = ({ navigation }) => {
       workoutList.sort((a, b) => {
         const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
         const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
-        return dateB - dateA; // Most recent first
+        return dateB - dateA; 
       });
       
       setWorkouts(workoutList);
@@ -85,7 +85,7 @@ const WorkoutScreen = ({ navigation }) => {
             try {
               await deleteDoc(doc(db, 'workouts', workout.id));
               Alert.alert('Success', 'Workout deleted successfully!');
-              fetchWorkouts(); // Refresh the list
+              fetchWorkouts(); 
             } catch (error) {
               console.error('Error deleting workout:', error);
               Alert.alert('Error', 'Failed to delete workout');
@@ -150,7 +150,7 @@ const WorkoutScreen = ({ navigation }) => {
       });
     }
 
-    // Legacy fields support (for old workouts)
+    
     if (workout.sets && !workout.detectedFields?.sets) {
       details.push(
         <View key="sets" style={styles.workoutDetailItem}>

@@ -21,6 +21,8 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import NutritionScreen from './src/screens/NutritionScreen';
 import AddMealScreen from './src/screens/AddMealScreen';
+import BodyMeasurementsScreen from './src/screens/BodyMeasurementsScreen';
+import AddMeasurementScreen from './src/screens/AddMeasurementScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -35,7 +37,8 @@ const TabIcon = ({ name, focused, color, size }) => {
       case 'Progress': return '📊';
       case 'Profile': return '👤';
       case 'Nutrition': return '🍎';
-      default: return '•';
+      case 'Measurement': return 'L';
+      default: return '.';
     }
   };
 
@@ -136,6 +139,22 @@ function NutritionStack() {
   );
 }
 
+function MeasurementsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MeasurementsList" component={BodyMeasurementsScreen} />
+      <Stack.Screen 
+        name="AddMeasurement" 
+        component={AddMeasurementScreen}
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 // Main App Tabs (after login) - FIXED VERSION
 function MainTabs() {
   return (
@@ -203,6 +222,14 @@ function MainTabs() {
           tabBarLabel: 'Nutrition',
         }}
       />
+
+      <Tab.Screen
+      name="Measurements"
+      component={MeasurementsStack}
+      options={{
+      tabBarLabel: 'Body',
+       }}
+     />   
     </Tab.Navigator>
   );
 }
