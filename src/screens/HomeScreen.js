@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 8,
+    marginBottom: 5,
   },
   date: {
     fontSize: 16,
