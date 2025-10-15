@@ -142,7 +142,7 @@ const WaterTrackerScreen = () => {
     
     try {
       const today = new Date().toISOString().split('T')[0];
-      const waterDocRef = doc(db, 'water_intake', ${auth.currentUser.uid}_${today});
+      const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
       
       const newGlassCount = todayWater - 1;
       
@@ -220,6 +220,7 @@ const WaterTrackerScreen = () => {
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statSubtitle}>{subtitle}</Text>
     </View>
+    
   );
 
   if (loading) {
