@@ -1,3 +1,4 @@
+// src/screens/ProfileScreen.js - Complete with Camera & Gallery Support
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,14 +9,22 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  Image,
+  ActionSheetIOS,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db } from '../services/firebase';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { auth, db, storage } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 
 const ProfileScreen = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
+  const [profileImageUri, setProfileImageUri] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [stats, setStats] = useState({
     totalWorkouts: 0,
     totalDuration: 0,
@@ -27,7 +36,6 @@ const ProfileScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Refresh data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       fetchUserData();
@@ -36,7 +44,26 @@ const ProfileScreen = ({ navigation }) => {
 
   useEffect(() => {
     fetchUserData();
+    requestPermissions();
   }, []);
+
+  const requestPermissions = async () => {
+    try {
+      // Request camera permissions
+      const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      if (cameraStatus !== 'granted') {
+        console.log('Camera permission not granted');
+      }
+
+      // Request media library permissions
+      const { status: mediaStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (mediaStatus !== 'granted') {
+        console.log('Media library permission not granted');
+      }
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -46,17 +73,16 @@ const ProfileScreen = ({ navigation }) => {
 
   const fetchUserData = async () => {
     try {
-      // Get user profile data
       const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
       if (userDoc.exists()) {
-        setUserData(userDoc.data());
+        const data = userDoc.data();
+        setUserData(data);
+        setProfileImageUri(data.profileImageUrl || null);
       }
 
-      // Calculate user statistics
       await calculateUserStats();
     } catch (error) {
       console.error('Error fetching user data:', error);
-      Alert.alert('Error', 'Failed to load profile data');
     } finally {
       setLoading(false);
     }
@@ -64,7 +90,6 @@ const ProfileScreen = ({ navigation }) => {
 
   const calculateUserStats = async () => {
     try {
-      // Get all user workouts
       const workoutsQuery = query(
         collection(db, 'workouts'),
         where('userId', '==', auth.currentUser.uid)
@@ -72,10 +97,8 @@ const ProfileScreen = ({ navigation }) => {
       const workoutsSnapshot = await getDocs(workoutsQuery);
       const workouts = workoutsSnapshot.docs.map(doc => doc.data());
 
-      // Calculate total duration
       const totalDuration = workouts.reduce((sum, workout) => sum + (workout.duration || 0), 0);
 
-      // Find most frequent workout type
       const workoutTypes = workouts.reduce((acc, workout) => {
         acc[workout.type] = (acc[workout.type] || 0) + 1;
         return acc;
@@ -85,7 +108,6 @@ const ProfileScreen = ({ navigation }) => {
         ? Object.keys(workoutTypes).reduce((a, b) => workoutTypes[a] > workoutTypes[b] ? a : b)
         : 'None';
 
-      // Calculate current streak (days with workouts in the last week)
       const now = new Date();
       const last7Days = [];
       for (let i = 0; i < 7; i++) {
@@ -93,23 +115,13 @@ const ProfileScreen = ({ navigation }) => {
         last7Days.push(date.toDateString());
       }
 
-      // Safe date handling for workout days
-      const workoutDays = new Set(
-        workouts
-          .filter(w => w.createdAt) // Filter out workouts without createdAt
-          .map(w => {
-            try {
-              const date = w.createdAt?.toDate?.() 
-                ? new Date(w.createdAt.toDate()) 
-                : new Date(w.createdAt || Date.now());
-              return date.toDateString();
-            } catch (error) {
-              console.warn('Invalid workout date:', error);
-              return null;
-            }
-          })
-          .filter(date => date !== null) // Remove null values
-      );
+      const workoutDays = new Set(workouts.map(w => {
+        try {
+          return new Date(w.createdAt.toDate()).toDateString();
+        } catch (error) {
+          return null;
+        }
+      }).filter(Boolean));
 
       let currentStreak = 0;
       for (const day of last7Days) {
@@ -120,37 +132,226 @@ const ProfileScreen = ({ navigation }) => {
         }
       }
 
-      // Get total water glasses (simplified calculation)
-      let totalWaterGlasses = 0;
-      try {
-        // This is a simplified version - in reality you'd query all water intake docs
-        const today = new Date().toISOString().split('T')[0];
-        const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
-        if (waterDoc.exists()) {
-          totalWaterGlasses = waterDoc.data().glasses || 0;
-        }
-      } catch (waterError) {
-        console.log('Could not fetch water data:', waterError);
-      }
-
-      // Safe string capitalization
-      const formattedWorkoutType = favoriteWorkoutType && favoriteWorkoutType !== 'None'
-        ? favoriteWorkoutType.charAt(0).toUpperCase() + favoriteWorkoutType.slice(1)
-        : 'None';
-
       setStats({
         totalWorkouts: workouts.length,
         totalDuration,
-        totalWaterGlasses,
-        joinDate: userData?.createdAt?.toDate 
-          ? new Date(userData.createdAt.toDate()).toLocaleDateString() 
-          : 'Unknown',
+        totalWaterGlasses: 0,
+        joinDate: userData?.createdAt ? new Date(userData.createdAt.toDate()).toLocaleDateString() : 'Unknown',
         currentStreak,
-        favoriteWorkoutType: formattedWorkoutType
+        favoriteWorkoutType: favoriteWorkoutType.charAt(0).toUpperCase() + favoriteWorkoutType.slice(1)
       });
     } catch (error) {
       console.error('Error calculating user stats:', error);
     }
+  };
+
+  const showImagePickerOptions = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Library', 'Remove Photo'],
+          cancelButtonIndex: 0,
+          destructiveButtonIndex: profileImageUri ? 3 : -1,
+        },
+        (buttonIndex) => {
+          switch (buttonIndex) {
+            case 1:
+              openCamera();
+              break;
+            case 2:
+              openImageLibrary();
+              break;
+            case 3:
+              if (profileImageUri) removeProfileImage();
+              break;
+          }
+        }
+      );
+    } else {
+      // For Android
+      Alert.alert(
+        'Update Profile Picture',
+        'Choose an option',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Take Photo', onPress: openCamera },
+          { text: 'Choose from Gallery', onPress: openImageLibrary },
+          ...(profileImageUri ? [{ 
+            text: 'Remove Photo', 
+            onPress: removeProfileImage, 
+            style: 'destructive' 
+          }] : [])
+        ]
+      );
+    }
+  };
+
+  const openCamera = async () => {
+    try {
+      // Check permission
+      const { status } = await ImagePicker.getCameraPermissionsAsync();
+      if (status !== 'granted') {
+        const { status: newStatus } = await ImagePicker.requestCameraPermissionsAsync();
+        if (newStatus !== 'granted') {
+          Alert.alert(
+            'Permission Required',
+            'Camera access is needed to take photos. Please enable it in your device settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => ImagePicker.requestCameraPermissionsAsync() }
+            ]
+          );
+          return;
+        }
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        uploadProfileImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    }
+  };
+
+  const openImageLibrary = async () => {
+    try {
+      // Check permission
+      const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (newStatus !== 'granted') {
+          Alert.alert(
+            'Permission Required',
+            'Photo library access is needed. Please enable it in your device settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => ImagePicker.requestMediaLibraryPermissionsAsync() }
+            ]
+          );
+          return;
+        }
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        uploadProfileImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Image library error:', error);
+      Alert.alert('Error', 'Failed to open image library. Please try again.');
+    }
+  };
+
+  const uploadProfileImage = async (imageUri) => {
+    setUploadingImage(true);
+    try {
+      // Convert image to blob
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      // Create storage reference with timestamp to ensure uniqueness
+      const timestamp = Date.now();
+      const imageRef = ref(storage, `profile_images/${auth.currentUser.uid}_${timestamp}`);
+      
+      // Delete old image if exists
+      if (userData?.profileImageUrl) {
+        try {
+          const oldImagePath = userData.profileImageUrl.split('/o/')[1]?.split('?')[0];
+          if (oldImagePath) {
+            const oldImageRef = ref(storage, decodeURIComponent(oldImagePath));
+            await deleteObject(oldImageRef);
+          }
+        } catch (deleteError) {
+          console.log('Could not delete old image:', deleteError);
+        }
+      }
+
+      // Upload new image
+      await uploadBytes(imageRef, blob);
+      const downloadURL = await getDownloadURL(imageRef);
+
+      // Update user document with new image URL
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await updateDoc(userRef, {
+        profileImageUrl: downloadURL,
+        updatedAt: new Date()
+      });
+
+      // Update local state
+      setProfileImageUri(downloadURL);
+      setUserData(prev => ({ ...prev, profileImageUrl: downloadURL }));
+
+      Alert.alert('Success', 'Profile picture updated successfully!');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Alert.alert('Error', 'Failed to upload profile picture. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeProfileImage = async () => {
+    Alert.alert(
+      'Remove Profile Picture',
+      'Are you sure you want to remove your profile picture?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Remove', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setUploadingImage(true);
+
+              // Delete image from storage
+              if (userData?.profileImageUrl) {
+                try {
+                  const imagePath = userData.profileImageUrl.split('/o/')[1]?.split('?')[0];
+                  if (imagePath) {
+                    const imageRef = ref(storage, decodeURIComponent(imagePath));
+                    await deleteObject(imageRef);
+                  }
+                } catch (deleteError) {
+                  console.log('Could not delete storage image:', deleteError);
+                }
+              }
+
+              // Update user document
+              const userRef = doc(db, 'users', auth.currentUser.uid);
+              await updateDoc(userRef, {
+                profileImageUrl: null,
+                updatedAt: new Date()
+              });
+
+              // Update local state
+              setProfileImageUri(null);
+              setUserData(prev => ({ ...prev, profileImageUrl: null }));
+
+              Alert.alert('Success', 'Profile picture removed');
+            } catch (error) {
+              console.error('Error removing image:', error);
+              Alert.alert('Error', 'Failed to remove profile picture');
+            } finally {
+              setUploadingImage(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleSignOut = async () => {
@@ -208,7 +409,8 @@ const ProfileScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text>Loading profile...</Text>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
         </View>
       </SafeAreaView>
     );
@@ -220,16 +422,48 @@ const ProfileScreen = ({ navigation }) => {
         style={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Profile Header */}
+        {/* Profile Header with Avatar */}
         <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
-            </Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.avatarContainer}
+            onPress={showImagePickerOptions}
+            disabled={uploadingImage}
+          >
+            {profileImageUri ? (
+              <Image source={{ uri: profileImageUri }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>
+                  {userData?.name ? userData.name.charAt(0).toUpperCase() : 'U'}
+                </Text>
+              </View>
+            )}
+            
+            {uploadingImage && (
+              <View style={styles.uploadingOverlay}>
+                <ActivityIndicator size="small" color="white" />
+                <Text style={styles.uploadingText}>Uploading...</Text>
+              </View>
+            )}
+            
+            <View style={styles.cameraIcon}>
+              <Text style={styles.cameraIconText}>📷</Text>
+            </View>
+          </TouchableOpacity>
+          
           <Text style={styles.profileName}>{userData?.name || 'User'}</Text>
           <Text style={styles.profileEmail}>{userData?.email || auth.currentUser?.email}</Text>
           <Text style={styles.joinDate}>Member since {stats.joinDate}</Text>
+          
+          <TouchableOpacity 
+            style={styles.changePhotoButton}
+            onPress={showImagePickerOptions}
+            disabled={uploadingImage}
+          >
+            <Text style={styles.changePhotoText}>
+              {profileImageUri ? 'Change Photo' : 'Add Photo'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Statistics Grid */}
@@ -271,22 +505,22 @@ const ProfileScreen = ({ navigation }) => {
             <InfoRow 
               label="Full Name" 
               value={userData?.name} 
-              onPress={() => navigation.navigate('EditProfile', { field: 'name' })}
+              onPress={() => navigation.navigate('EditProfile')}
             />
             <InfoRow 
               label="Age" 
               value={userData?.age ? `${userData.age} years` : null}
-              onPress={() => navigation.navigate('EditProfile', { field: 'age' })}
+              onPress={() => navigation.navigate('EditProfile')}
             />
             <InfoRow 
               label="Height" 
               value={userData?.height ? `${userData.height} cm` : null}
-              onPress={() => navigation.navigate('EditProfile', { field: 'height' })}
+              onPress={() => navigation.navigate('EditProfile')}
             />
             <InfoRow 
               label="Weight" 
               value={userData?.weight ? `${userData.weight} kg` : null}
-              onPress={() => navigation.navigate('EditProfile', { field: 'weight' })}
+              onPress={() => navigation.navigate('EditProfile')}
             />
             <InfoRow 
               label="Email" 
@@ -314,24 +548,6 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* App Information */}
-        <View style={styles.appInfoContainer}>
-          <Text style={styles.sectionTitle}>App Information</Text>
-          <View style={styles.infoCard}>
-            <InfoRow label="Version" value="1.0.0" />
-            <InfoRow 
-              label="Privacy Policy" 
-              value="" 
-              onPress={() => Alert.alert('Privacy Policy', 'Privacy policy would be displayed here.')}
-            />
-            <InfoRow 
-              label="Terms of Service" 
-              value="" 
-              onPress={() => Alert.alert('Terms of Service', 'Terms of service would be displayed here.')}
-            />
-          </View>
-        </View>
-
         {/* Sign Out Button */}
         <View style={styles.signOutContainer}>
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
@@ -353,6 +569,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
   content: {
     flex: 1,
   },
@@ -364,18 +585,62 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    position: 'relative',
+    marginBottom: 15,
+  },
+  avatarImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  avatarPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
   },
   avatarText: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
     color: 'white',
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  uploadingText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 5,
+  },
+  cameraIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  cameraIconText: {
+    fontSize: 12,
   },
   profileName: {
     fontSize: 24,
@@ -391,6 +656,18 @@ const styles = StyleSheet.create({
   joinDate: {
     fontSize: 14,
     color: '#999',
+    marginBottom: 15,
+  },
+  changePhotoButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  changePhotoText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
   statsContainer: {
     padding: 20,
@@ -507,10 +784,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  appInfoContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 30,
-  },
   signOutContainer: {
     paddingHorizontal: 20,
     paddingBottom: 30,
@@ -528,4 +801,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProfileScreen
+export default ProfileScreen;
