@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -40,12 +40,12 @@ const HomeScreen = ({ navigation }) => {
 
   const fetchUserData = async () => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
       if (userDoc.exists()) {
         setUserData(userDoc.data());
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error("Error fetching user data:", error);
     }
   };
 
@@ -53,9 +53,9 @@ const HomeScreen = ({ navigation }) => {
     try {
       const today = new Date().toDateString();
       const workoutsQuery = query(
-        collection(db, 'workouts'),
-        where('userId', '==', auth.currentUser.uid),
-        where('date', '==', today)
+        collection(db, "workouts"),
+        where("userId", "==", auth.currentUser.uid),
+        where("date", "==", today)
       );
       const querySnapshot = await getDocs(workoutsQuery);
       let workoutCount = 0;
@@ -77,15 +77,15 @@ const HomeScreen = ({ navigation }) => {
         calories: estimatedCalories,
       });
     } catch (error) {
-      console.error('Error fetching today stats:', error);
+      console.error("Error fetching today stats:", error);
     }
   };
 
   const fetchRecentWorkouts = async () => {
     try {
       const workoutsQuery = query(
-        collection(db, 'workouts'),
-        where('userId', '==', auth.currentUser.uid)
+        collection(db, "workouts"),
+        where("userId", "==", auth.currentUser.uid)
       );
       const querySnapshot = await getDocs(workoutsQuery);
       let workoutList = querySnapshot.docs.map((doc) => ({
@@ -99,7 +99,7 @@ const HomeScreen = ({ navigation }) => {
       });
       setRecentWorkouts(workoutList.slice(0, 5));
     } catch (error) {
-      console.error('Error fetching recent workouts:', error);
+      console.error("Error fetching recent workouts:", error);
     }
   };
 
@@ -245,7 +245,7 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Workouts</Text>
             {recentWorkouts.length > 0 && (
-              <TouchableOpacity onPress={() => navigation.navigate('Workout')}>
+              <TouchableOpacity onPress={() => navigation.navigate("Workout")}>
                 <Text style={styles.seeAllText}>See All</Text>
               </TouchableOpacity>
             )}
@@ -258,7 +258,7 @@ const HomeScreen = ({ navigation }) => {
               </Text>
               <TouchableOpacity
                 style={styles.startButton}
-                onPress={() => navigation.navigate('Workout')}
+                onPress={() => navigation.navigate("Workout")}
               >
                 <Text style={styles.startButtonText}>Log First Workout</Text>
               </TouchableOpacity>
@@ -292,9 +292,9 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingVertical: 20,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   greeting: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 5 },
   date: { fontSize: 16, color: '#666' },
