@@ -1,4 +1,5 @@
 
+import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -70,7 +71,7 @@ function WorkoutStack() {
         component={AddWorkoutScreen}
         options={{
           headerShown: false,
-          presentation: 'modal',
+          // presentation: 'modal',
         }}
       />
       <Stack.Screen
@@ -78,7 +79,7 @@ function WorkoutStack() {
         component={EditWorkoutScreen}
         options={{
           headerShown: false,
-          presentation: 'modal',
+          // presentation: 'modal',
         }}
       />
     </Stack.Navigator>
@@ -95,7 +96,7 @@ function GoalsStack() {
         component={EditGoalScreen}
         options={{
           headerShown: false,
-          presentation: 'modal',
+          // presentation: 'modal',
         }}
       />
     </Stack.Navigator>
@@ -112,7 +113,7 @@ function ProfileStack() {
         component={EditProfileScreen}
         options={{
           headerShown: false,
-          presentation: 'modal',
+          // presentation: 'modal',
         }}
       />
     </Stack.Navigator>
@@ -129,7 +130,7 @@ function NutritionStack() {
         component={AddMealScreen}
         options={{
           headerShown: false,
-          presentation: 'modal',
+          // presentation: 'modal',
         }}
       />
     </Stack.Navigator>
