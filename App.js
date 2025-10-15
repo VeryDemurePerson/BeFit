@@ -23,9 +23,9 @@ import EditProfileScreen from './src/screens/EditProfileScreen';
 import NutritionScreen from './src/screens/NutritionScreen';
 import AddMealScreen from './src/screens/AddMealScreen';
 
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-
 
 const TabIcon = ({ name, focused, color, size }) => {
   const getIcon = () => {
@@ -36,7 +36,7 @@ const TabIcon = ({ name, focused, color, size }) => {
       case 'Progress': return '📊';
       case 'Profile': return '👤';
       case 'Nutrition': return '🍎';
-      default: return '•';
+      default: return '.';
     }
   };
 
@@ -137,6 +137,8 @@ function NutritionStack() {
   );
 }
 
+
+
 // Main App Tabs (after login) - FIXED VERSION
 function MainTabs() {
   return (
@@ -204,6 +206,8 @@ function MainTabs() {
           tabBarLabel: 'Nutrition',
         }}
       />
+
+      
     </Tab.Navigator>
   );
 }
