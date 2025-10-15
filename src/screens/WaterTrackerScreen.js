@@ -126,10 +126,10 @@ const WaterTrackerScreen = () => {
       
       // Show encouraging message
       if (newGlassCount >= dailyGoal) {
-        Alert.alert('Congratulations! 🎉', You've reached your daily water goal of ${dailyGoal} glasses!);
+        Alert.alert('Congratulations! 🎉', `You've reached your daily water goal of ${dailyGoal} glasses!`);
       } else {
         const remaining = dailyGoal - newGlassCount;
-        Alert.alert('Great job! 💧', Glass added! ${remaining} more to reach your daily goal.);
+        Alert.alert('Great job! 💧', `Glass added! ${remaining} more to reach your daily goal.`);
       }
     } catch (error) {
       console.error('Error adding water glass:', error);
