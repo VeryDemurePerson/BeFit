@@ -151,7 +151,7 @@ function MainTabs() {
           backgroundColor: '#ffffff',
           borderTopWidth: 1,
           borderTopColor: '#E5E5EA',
-          height: 60,
+          height: 70,
           paddingBottom: 5,
           paddingTop: 5,
         },
