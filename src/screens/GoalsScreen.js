@@ -1,3 +1,4 @@
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -27,7 +28,6 @@ const GoalsScreen = ({ navigation }) => {
   });
   const [loading, setLoading] = useState(true);
 
-
   useFocusEffect(
     React.useCallback(() => {
       fetchGoalsAndProgress();
@@ -40,7 +40,6 @@ const GoalsScreen = ({ navigation }) => {
 
   const fetchGoalsAndProgress = async () => {
     try {
-     
       try {
         const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
         if (userDoc.exists() && userDoc.data().goals) {
@@ -49,8 +48,6 @@ const GoalsScreen = ({ navigation }) => {
       } catch (goalError) {
         console.log('Could not fetch goals, using defaults:', goalError.message);
       }
-
-      // Calculate current progress
       await calculateProgress();
     } catch (error) {
       console.error('Error fetching goals:', error);
@@ -65,8 +62,6 @@ const GoalsScreen = ({ navigation }) => {
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const today = new Date().toISOString().split('T')[0];
-
-     
       let workouts = [];
       try {
         const workoutsQuery = query(
@@ -78,23 +73,16 @@ const GoalsScreen = ({ navigation }) => {
       } catch (workoutError) {
         console.log('Could not fetch workouts for progress calculation:', workoutError.message);
       }
-
-   
       const thisWeekWorkouts = workouts.filter(w => {
         const date = w.createdAt?.toDate?.() || new Date(w.createdAt);
         return date >= oneWeekAgo;
       });
-
       const weeklyWorkoutsCount = thisWeekWorkouts.length;
       const weeklyDurationCount = thisWeekWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0);
-
-    
       const thisMonthWorkouts = workouts.filter(w => {
         const date = w.createdAt?.toDate?.() || new Date(w.createdAt);
         return date >= monthStart;
       });
-
-     
       let dailyWaterCount = 0;
       try {
         const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
@@ -102,7 +90,6 @@ const GoalsScreen = ({ navigation }) => {
       } catch (waterError) {
         console.log('Could not fetch water data:', waterError.message);
       }
-
       setProgress({
         weeklyWorkouts: weeklyWorkoutsCount,
         weeklyDuration: weeklyDurationCount,
@@ -114,58 +101,26 @@ const GoalsScreen = ({ navigation }) => {
     }
   };
 
-  const updateGoal = async (goalType, value) => {
-    try {
-      const newGoals = { ...goals, [goalType]: parseInt(value) };
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      
-      
-      const userDoc = await getDoc(userRef);
-      
-      if (userDoc.exists()) {
-        
-        await updateDoc(userRef, {
-          goals: newGoals
-        });
-      } else {
-        
-        await setDoc(userRef, {
-          goals: newGoals,
-          email: auth.currentUser.email,
-          createdAt: new Date()
-        });
-      }
-      
-      setGoals(newGoals);
-      setShowEditModal(false);
-      Alert.alert('Success', 'Goal updated successfully!');
-    } catch (error) {
-      Alert.alert('Error', `Failed to update goal: ${error.message}`);
-      console.error('Error updating goal:', error);
-    }
-  };
-
   const addWaterGlass = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
-      
       const waterDoc = await getDoc(waterDocRef);
       const currentGlasses = waterDoc.exists() ? waterDoc.data().glasses : 0;
-      
-      await setDoc(waterDocRef, {
-        userId: auth.currentUser.uid,
-        date: today,
-        glasses: currentGlasses + 1,
-        updatedAt: new Date()
-      }, { merge: true });
-      
-     
+      await setDoc(
+        waterDocRef,
+        {
+          userId: auth.currentUser.uid,
+          date: today,
+          glasses: currentGlasses + 1,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
       setProgress(prev => ({
         ...prev,
-        dailyWater: currentGlasses + 1
+        dailyWater: currentGlasses + 1,
       }));
-      
       Alert.alert('Great!', `Water glass added! Total today: ${currentGlasses + 1}`);
     } catch (error) {
       Alert.alert('Error', `Failed to add water glass: ${error.message}`);
@@ -173,33 +128,37 @@ const GoalsScreen = ({ navigation }) => {
     }
   };
 
-  const openEditModal = (goalType) => {
-    setEditingGoal(goalType);
-    setNewValue(goals[goalType].toString());
-    setShowEditModal(true);
-  };
-
-  const getGoalTitle = (goalType) => {
+  const getGoalTitle = goalType => {
     switch (goalType) {
-      case 'weeklyWorkouts': return 'Weekly Workouts';
-      case 'weeklyDuration': return 'Weekly Minutes';
-      case 'dailyWater': return 'Daily Water (glasses)';
-      case 'monthlyWorkouts': return 'Monthly Workouts';
-      default: return '';
+      case 'weeklyWorkouts':
+        return 'Weekly Workouts';
+      case 'weeklyDuration':
+        return 'Weekly Minutes';
+      case 'dailyWater':
+        return 'Daily Water (glasses)';
+      case 'monthlyWorkouts':
+        return 'Monthly Workouts';
+      default:
+        return '';
     }
   };
 
-  const getGoalIcon = (goalType) => {
+  const getGoalIcon = goalType => {
     switch (goalType) {
-      case 'weeklyWorkouts': return 'ðŸƒâ€â™‚ï¸';
-      case 'weeklyDuration': return 'â±ï¸';
-      case 'dailyWater': return 'ðŸ’§';
-      case 'monthlyWorkouts': return 'ðŸ“…';
-      default: return 'ðŸŽ¯';
+      case 'weeklyWorkouts':
+        return <FontAwesome5 name="dumbbell" size={24} color="#FF7043" />;
+      case 'weeklyDuration':
+        return <Ionicons name="timer-outline" size={24} color="#ff0000ff" />;
+      case 'dailyWater':
+        return <Ionicons name="water-outline" size={24} color="#29B6F6" />;
+      case 'monthlyWorkouts':
+        return <MaterialCommunityIcons name="calendar-check-outline" size={24} color="#66BB6A" />;
+      default:
+        return <Ionicons name="trophy-outline" size={24} color="#9C27B0" />;
     }
   };
 
-  const getProgressPercentage = (goalType) => {
+  const getProgressPercentage = goalType => {
     const goal = goals[goalType];
     const current = progress[goalType];
     if (goal === 0) return 0;
@@ -211,45 +170,43 @@ const GoalsScreen = ({ navigation }) => {
     const isCompleted = percentage >= 100;
     const current = progress[goalType];
     const target = goals[goalType];
-
     return (
       <View style={[styles.goalCard, isCompleted && styles.completedGoal]}>
         <View style={styles.goalHeader}>
-          <Text style={styles.goalIcon}>{getGoalIcon(goalType)}</Text>
+          <View style={styles.goalIcon}>{getGoalIcon(goalType)}</View>
           <View style={styles.goalInfo}>
             <Text style={styles.goalTitle}>{getGoalTitle(goalType)}</Text>
-            <Text style={styles.goalProgress}>
-              {current} / {target}
-            </Text>
+            <Text style={styles.goalProgress}>{current} / {target}</Text>
           </View>
           <View style={styles.goalActions}>
-            <Text style={[styles.goalPercentage, isCompleted && styles.completedText]}>
-              {percentage}%
-            </Text>
-            <TouchableOpacity 
+            <Text style={[styles.goalPercentage, isCompleted && styles.completedText]}>{percentage}%</Text>
+            <TouchableOpacity
               style={styles.modifyButton}
-              onPress={() => navigation.navigate('EditGoal', { 
-                goalType: goalType, 
-                currentValue: target 
-              })}
+              onPress={() =>
+                navigation.navigate('EditGoal', {
+                  goalType: goalType,
+                  currentValue: target,
+                })
+              }
             >
               <Text style={styles.modifyButtonText}>Modify</Text>
             </TouchableOpacity>
           </View>
         </View>
-        
         <View style={styles.progressBarContainer}>
-          <View 
+          <View
             style={[
-              styles.progressBar, 
+              styles.progressBar,
               { width: `${percentage}%` },
-              isCompleted && styles.completedProgressBar
-            ]} 
+              isCompleted && styles.completedProgressBar,
+            ]}
           />
         </View>
-        
         {isCompleted && (
-          <Text style={styles.completedMessage}>ðŸŽ‰ Goal Completed!</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8 }}>
+            <Ionicons name="sparkles-outline" size={18} color="#4CAF50" style={{ marginRight: 6 }} />
+            <Text style={styles.completedMessage}>Goal Completed!</Text>
+          </View>
         )}
       </View>
     );
@@ -259,37 +216,21 @@ const GoalsScreen = ({ navigation }) => {
     <View style={styles.quickActionsContainer}>
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.actionsGrid}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => navigation.navigate('Workout', { screen: 'AddWorkout' })}
-        >
-          <Text style={styles.actionIcon}>ðŸ’ª</Text>
-          <Text style={styles.actionText}>Add Workout</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Workout', { screen: 'AddWorkout' })}>
+          <FontAwesome5 name="dumbbell" size={28} color="#FF7043" style={styles.actionIcon} />
+          <Text style={[styles.actionText, { color: '#FF7043' }]}>Add Workout</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={addWaterGlass}
-        >
-          <Text style={styles.actionIcon}>ðŸ’§</Text>
-          <Text style={styles.actionText}>Drink Water</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={addWaterGlass}>
+          <Ionicons name="water-outline" size={28} color="#42A5F5" style={styles.actionIcon} />
+          <Text style={[styles.actionText, { color: '#42A5F5' }]}>Drink Water</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => navigation.navigate('Progress')}
-        >
-          <Text style={styles.actionIcon}>ðŸ“Š</Text>
-          <Text style={styles.actionText}>View Progress</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Progress')}>
+          <Ionicons name="stats-chart-outline" size={28} color="#66BB6A" style={styles.actionIcon} />
+          <Text style={[styles.actionText, { color: '#66BB6A' }]}>View Progress</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
-
-  const EditGoalModal = () => {
-   
-    return null;
-  };
 
   if (loading) {
     return (
@@ -306,21 +247,14 @@ const GoalsScreen = ({ navigation }) => {
       <View style={styles.header}>
         <Text style={styles.title}>Goals</Text>
       </View>
-
       <ScrollView style={styles.content}>
-        {/* Goals Overview */}
         <View style={styles.goalsContainer}>
           <Text style={styles.sectionTitle}>Your Fitness Goals</Text>
-          
           {Object.keys(goals).map(goalType => (
             <GoalCard key={goalType} goalType={goalType} />
           ))}
         </View>
-
-        {/* Quick Actions */}
         <QuickActions />
-
-        {/* Motivation Section */}
         <View style={styles.motivationContainer}>
           <Text style={styles.motivationTitle}>Stay Motivated</Text>
           <Text style={styles.motivationText}>
@@ -334,245 +268,38 @@ const GoalsScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  content: {
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 15,
-  },
-  goalsContainer: {
-    padding: 20,
-  },
-  goalCard: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  completedGoal: {
-    borderWidth: 2,
-    borderColor: '#4CAF50',
-  },
-  goalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  goalIcon: {
-    fontSize: 24,
-    marginRight: 15,
-  },
-  goalInfo: {
-    flex: 1,
-  },
-  goalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  goalProgress: {
-    fontSize: 14,
-    color: '#666',
-  },
-  goalActions: {
-    alignItems: 'flex-end',
-  },
-  goalPercentage: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 8,
-  },
-  modifyButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  modifyButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  completedText: {
-    color: '#4CAF50',
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#007AFF',
-    borderRadius: 4,
-  },
-  completedProgressBar: {
-    backgroundColor: '#4CAF50',
-  },
-  completedMessage: {
-    fontSize: 14,
-    color: '#4CAF50',
-    fontWeight: '600',
-    marginTop: 10,
-    textAlign: 'center',
-  },
-  quickActionsContainer: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionButton: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    flex: 1,
-    marginHorizontal: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actionIcon: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
-  actionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-  },
-  motivationContainer: {
-    backgroundColor: '#007AFF',
-    margin: 20,
-    marginTop: 0,
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  motivationTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 10,
-  },
-  motivationText: {
-    fontSize: 16,
-    color: 'white',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginBottom: 10,
-    lineHeight: 22,
-  },
-  motivationAuthor: {
-    fontSize: 14,
-    color: 'white',
-    opacity: 0.8,
-  },
-  
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalCancel: {
-    color: '#007AFF',
-    fontSize: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  modalSave: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalContent: {
-    flex: 1,
-  },
-  modalScrollContent: {
-    padding: 20,
-    alignItems: 'center',
-    paddingBottom: 100,
-  },
-  editGoalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  goalInput: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 8,
-    fontSize: 18,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    textAlign: 'center',
-    width: 200,
-    marginBottom: 15,
-  },
-  goalHint: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: { paddingHorizontal: 20, paddingVertical: 15, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#333' },
+  content: { flex: 1 },
+  sectionTitle: { fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 15 },
+  goalsContainer: { padding: 20 },
+  goalCard: { backgroundColor: 'white', padding: 20, borderRadius: 16, marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 5 },
+  completedGoal: { borderWidth: 2, borderColor: '#4CAF50' },
+  goalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  goalIcon: { marginRight: 15, justifyContent: 'center', alignItems: 'center' },
+  goalInfo: { flex: 1 },
+  goalTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 2 },
+  goalProgress: { fontSize: 14, color: '#666' },
+  goalActions: { alignItems: 'flex-end' },
+  goalPercentage: { fontSize: 18, fontWeight: 'bold', color: '#007AFF', marginBottom: 8, textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  modifyButton: { backgroundColor: '#007AFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  modifyButtonText: { color: 'white', fontSize: 12, fontWeight: '600' },
+  completedText: { color: '#4CAF50' },
+  progressBarContainer: { height: 8, backgroundColor: '#E0E0E0', borderRadius: 4, overflow: 'hidden' },
+  progressBar: { height: '100%', backgroundColor: '#007AFF', borderRadius: 4 },
+  completedProgressBar: { backgroundColor: '#4CAF50' },
+  completedMessage: { fontSize: 14, color: '#4CAF50', fontWeight: '600', textAlign: 'center' },
+  quickActionsContainer: { padding: 20, paddingTop: 0 },
+  actionsGrid: { flexDirection: 'row', justifyContent: 'space-between' },
+  actionButton: { backgroundColor: 'white', padding: 20, borderRadius: 16, alignItems: 'center', flex: 1, marginHorizontal: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 6, elevation: 5 },
+  actionIcon: { marginBottom: 8 },
+  actionText: { fontSize: 13, fontWeight: '700', textAlign: 'center', letterSpacing: 0.3 },
+  motivationContainer: { backgroundColor: '#007AFF', margin: 20, marginTop: 0, padding: 20, borderRadius: 12, alignItems: 'center' },
+  motivationTitle: { fontSize: 18, fontWeight: 'bold', color: 'white', marginBottom: 10 },
+  motivationText: { fontSize: 16, color: 'white', fontStyle: 'italic', textAlign: 'center', marginBottom: 10, lineHeight: 22 },
+  motivationAuthor: { fontSize: 14, color: 'white', opacity: 0.8 },
 });
 
 export default GoalsScreen;
