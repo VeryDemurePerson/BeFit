@@ -271,7 +271,7 @@ const EditGoalScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffffff",
+    backgroundColor: "#f5f5f5",
   },
   header: {
     flexDirection: "row",
