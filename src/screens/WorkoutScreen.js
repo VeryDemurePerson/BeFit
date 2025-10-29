@@ -12,6 +12,7 @@ import {
 import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
+import { useEffect } from 'react';
 
 const WorkoutScreen = ({ navigation }) => {
   const [workouts, setWorkouts] = useState([]);
@@ -25,8 +26,10 @@ const WorkoutScreen = ({ navigation }) => {
     }, [])
   );
 
-  useEffect(() => {fetchWorkouts();
-}, []);
+ useEffect(() => {
+    fetchWorkouts();
+  }, []);   
+  
 
   const fetchWorkouts = async () => {
     try {
