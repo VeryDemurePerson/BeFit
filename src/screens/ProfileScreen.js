@@ -132,6 +132,11 @@ const ProfileScreen = ({ navigation }) => {
         console.log("Could not fetch water data:", waterError);
       }
 
+      // Safe string capitalization
+      const formattedWorkoutType = favoriteWorkoutType && favoriteWorkoutType !== 'None'
+        ? favoriteWorkoutType.charAt(0).toUpperCase() + favoriteWorkoutType.slice(1)
+        : 'None';
+
       setStats({
         totalWorkouts: workouts.length,
         totalDuration,

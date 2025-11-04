@@ -1,4 +1,5 @@
 
+import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -22,9 +23,9 @@ import EditProfileScreen from './src/screens/EditProfileScreen';
 import NutritionScreen from './src/screens/NutritionScreen';
 import AddMealScreen from './src/screens/AddMealScreen';
 
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-
 
 const TabIcon = ({ name, focused, color, size }) => {
   const getIcon = () => {
@@ -35,7 +36,7 @@ const TabIcon = ({ name, focused, color, size }) => {
       case 'Progress': return '📊';
       case 'Profile': return '👤';
       case 'Nutrition': return '🍎';
-      default: return '•';
+      default: return '.';
     }
   };
 
@@ -70,7 +71,7 @@ function WorkoutStack() {
         component={AddWorkoutScreen}
         options={{
           headerShown: false,
-          presentation: 'modal',
+          // presentation: 'modal',
         }}
       />
       <Stack.Screen
@@ -78,7 +79,7 @@ function WorkoutStack() {
         component={EditWorkoutScreen}
         options={{
           headerShown: false,
-          presentation: 'modal',
+          // presentation: 'modal',
         }}
       />
     </Stack.Navigator>
@@ -95,7 +96,7 @@ function GoalsStack() {
         component={EditGoalScreen}
         options={{
           headerShown: false,
-          presentation: 'modal',
+          // presentation: 'modal',
         }}
       />
     </Stack.Navigator>
@@ -112,7 +113,7 @@ function ProfileStack() {
         component={EditProfileScreen}
         options={{
           headerShown: false,
-          presentation: 'modal',
+          // presentation: 'modal',
         }}
       />
     </Stack.Navigator>
@@ -129,12 +130,14 @@ function NutritionStack() {
         component={AddMealScreen}
         options={{
           headerShown: false,
-          presentation: 'modal',
+          // presentation: 'modal',
         }}
       />
     </Stack.Navigator>
   );
 }
+
+
 
 // Main App Tabs (after login) - FIXED VERSION
 function MainTabs() {
@@ -151,7 +154,7 @@ function MainTabs() {
           backgroundColor: '#ffffff',
           borderTopWidth: 1,
           borderTopColor: '#E5E5EA',
-          height: 60,
+          height: 70,
           paddingBottom: 5,
           paddingTop: 5,
         },
@@ -203,6 +206,8 @@ function MainTabs() {
           tabBarLabel: 'Nutrition',
         }}
       />
+
+      
     </Tab.Navigator>
   );
 }

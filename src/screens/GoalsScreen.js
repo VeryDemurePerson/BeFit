@@ -1,3 +1,4 @@
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,7 +9,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -27,7 +28,6 @@ const GoalsScreen = ({ navigation }) => {
   });
   const [loading, setLoading] = useState(true);
 
-
   useFocusEffect(
     React.useCallback(() => {
       fetchGoalsAndProgress();
@@ -40,7 +40,7 @@ const GoalsScreen = ({ navigation }) => {
 
   const fetchGoalsAndProgress = async () => {
     try {
-     
+      // Fetch user goals
       try {
         const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
         if (userDoc.exists() && userDoc.data().goals) {
@@ -49,11 +49,10 @@ const GoalsScreen = ({ navigation }) => {
       } catch (goalError) {
         console.log('Could not fetch goals, using defaults:', goalError.message);
       }
-
-      // Calculate current progress
       await calculateProgress();
     } catch (error) {
       console.error('Error fetching goals:', error);
+      Alert.alert('Error', 'Failed to load goals data');
     } finally {
       setLoading(false);
     }
@@ -66,7 +65,7 @@ const GoalsScreen = ({ navigation }) => {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const today = new Date().toISOString().split('T')[0];
 
-     
+      // Fetch workouts
       let workouts = [];
       try {
         const workoutsQuery = query(
@@ -79,22 +78,21 @@ const GoalsScreen = ({ navigation }) => {
         console.log('Could not fetch workouts for progress calculation:', workoutError.message);
       }
 
-   
+      // Weekly workouts
       const thisWeekWorkouts = workouts.filter(w => {
         const date = w.createdAt?.toDate?.() || new Date(w.createdAt);
         return date >= oneWeekAgo;
       });
-
       const weeklyWorkoutsCount = thisWeekWorkouts.length;
       const weeklyDurationCount = thisWeekWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0);
 
-    
+      // Monthly workouts
       const thisMonthWorkouts = workouts.filter(w => {
         const date = w.createdAt?.toDate?.() || new Date(w.createdAt);
         return date >= monthStart;
       });
 
-     
+      // Daily water
       let dailyWaterCount = 0;
       try {
         const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
@@ -102,7 +100,6 @@ const GoalsScreen = ({ navigation }) => {
       } catch (waterError) {
         console.log('Could not fetch water data:', waterError.message);
       }
-
       setProgress({
         weeklyWorkouts: weeklyWorkoutsCount,
         weeklyDuration: weeklyDurationCount,
@@ -114,42 +111,10 @@ const GoalsScreen = ({ navigation }) => {
     }
   };
 
-  const updateGoal = async (goalType, value) => {
-    try {
-      const newGoals = { ...goals, [goalType]: parseInt(value) };
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      
-      
-      const userDoc = await getDoc(userRef);
-      
-      if (userDoc.exists()) {
-        
-        await updateDoc(userRef, {
-          goals: newGoals
-        });
-      } else {
-        
-        await setDoc(userRef, {
-          goals: newGoals,
-          email: auth.currentUser.email,
-          createdAt: new Date()
-        });
-      }
-      
-      setGoals(newGoals);
-      setShowEditModal(false);
-      Alert.alert('Success', 'Goal updated successfully!');
-    } catch (error) {
-      Alert.alert('Error', `Failed to update goal: ${error.message}`);
-      console.error('Error updating goal:', error);
-    }
-  };
-
   const addWaterGlass = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
-      
       const waterDoc = await getDoc(waterDocRef);
       const currentGlasses = waterDoc.exists() ? waterDoc.data().glasses : 0;
       
@@ -160,12 +125,10 @@ const GoalsScreen = ({ navigation }) => {
         updatedAt: new Date()
       }, { merge: true });
       
-     
       setProgress(prev => ({
         ...prev,
-        dailyWater: currentGlasses + 1
+        dailyWater: currentGlasses + 1,
       }));
-      
       Alert.alert('Great!', `Water glass added! Total today: ${currentGlasses + 1}`);
     } catch (error) {
       Alert.alert('Error', `Failed to add water glass: ${error.message}`);
@@ -173,33 +136,32 @@ const GoalsScreen = ({ navigation }) => {
     }
   };
 
-  const openEditModal = (goalType) => {
-    setEditingGoal(goalType);
-    setNewValue(goals[goalType].toString());
-    setShowEditModal(true);
-  };
-
   const getGoalTitle = (goalType) => {
     switch (goalType) {
-      case 'weeklyWorkouts': return 'Weekly Workouts';
-      case 'weeklyDuration': return 'Weekly Minutes';
-      case 'dailyWater': return 'Daily Water (glasses)';
-      case 'monthlyWorkouts': return 'Monthly Workouts';
-      default: return '';
+      case 'weeklyWorkouts':
+        return 'Weekly Workouts';
+      case 'weeklyDuration':
+        return 'Weekly Minutes';
+      case 'dailyWater':
+        return 'Daily Water (glasses)';
+      case 'monthlyWorkouts':
+        return 'Monthly Workouts';
+      default:
+        return '';
     }
   };
 
-  const getGoalIcon = (goalType) => {
+  const getGoalIcon = goalType => {
     switch (goalType) {
-      case 'weeklyWorkouts': return 'ðŸƒâ€â™‚ï¸';
-      case 'weeklyDuration': return 'â±ï¸';
-      case 'dailyWater': return 'ðŸ’§';
-      case 'monthlyWorkouts': return 'ðŸ“…';
-      default: return 'ðŸŽ¯';
+      case 'weeklyWorkouts': return '🏃‍♂️';
+      case 'weeklyDuration': return '⏱️';
+      case 'dailyWater': return '💧';
+      case 'monthlyWorkouts': return '📅';
+      default: return '🎯';
     }
   };
 
-  const getProgressPercentage = (goalType) => {
+  const getProgressPercentage = goalType => {
     const goal = goals[goalType];
     const current = progress[goalType];
     if (goal === 0) return 0;
@@ -211,45 +173,40 @@ const GoalsScreen = ({ navigation }) => {
     const isCompleted = percentage >= 100;
     const current = progress[goalType];
     const target = goals[goalType];
-
     return (
       <View style={[styles.goalCard, isCompleted && styles.completedGoal]}>
         <View style={styles.goalHeader}>
-          <Text style={styles.goalIcon}>{getGoalIcon(goalType)}</Text>
+          <View style={styles.goalIcon}>{getGoalIcon(goalType)}</View>
           <View style={styles.goalInfo}>
             <Text style={styles.goalTitle}>{getGoalTitle(goalType)}</Text>
-            <Text style={styles.goalProgress}>
-              {current} / {target}
-            </Text>
+            <Text style={styles.goalProgress}>{current} / {target}</Text>
           </View>
           <View style={styles.goalActions}>
-            <Text style={[styles.goalPercentage, isCompleted && styles.completedText]}>
-              {percentage}%
-            </Text>
-            <TouchableOpacity 
+            <Text style={[styles.goalPercentage, isCompleted && styles.completedText]}>{percentage}%</Text>
+            <TouchableOpacity
               style={styles.modifyButton}
-              onPress={() => navigation.navigate('EditGoal', { 
-                goalType: goalType, 
-                currentValue: target 
-              })}
+              onPress={() =>
+                navigation.navigate('EditGoal', {
+                  goalType: goalType,
+                  currentValue: target,
+                })
+              }
             >
               <Text style={styles.modifyButtonText}>Modify</Text>
             </TouchableOpacity>
           </View>
         </View>
-        
         <View style={styles.progressBarContainer}>
-          <View 
+          <View
             style={[
-              styles.progressBar, 
+              styles.progressBar,
               { width: `${percentage}%` },
-              isCompleted && styles.completedProgressBar
-            ]} 
+              isCompleted && styles.completedProgressBar,
+            ]}
           />
         </View>
-        
         {isCompleted && (
-          <Text style={styles.completedMessage}>ðŸŽ‰ Goal Completed!</Text>
+          <Text style={styles.completedMessage}>🎉 Goal Completed!</Text>
         )}
       </View>
     );
@@ -263,7 +220,7 @@ const GoalsScreen = ({ navigation }) => {
           style={styles.actionButton}
           onPress={() => navigation.navigate('Workout', { screen: 'AddWorkout' })}
         >
-          <Text style={styles.actionIcon}>ðŸ’ª</Text>
+          <Text style={styles.actionIcon}>💪</Text>
           <Text style={styles.actionText}>Add Workout</Text>
         </TouchableOpacity>
         
@@ -271,7 +228,7 @@ const GoalsScreen = ({ navigation }) => {
           style={styles.actionButton}
           onPress={addWaterGlass}
         >
-          <Text style={styles.actionIcon}>ðŸ’§</Text>
+          <Text style={styles.actionIcon}>💧</Text>
           <Text style={styles.actionText}>Drink Water</Text>
         </TouchableOpacity>
         
@@ -279,17 +236,12 @@ const GoalsScreen = ({ navigation }) => {
           style={styles.actionButton}
           onPress={() => navigation.navigate('Progress')}
         >
-          <Text style={styles.actionIcon}>ðŸ“Š</Text>
+          <Text style={styles.actionIcon}>📊</Text>
           <Text style={styles.actionText}>View Progress</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
-
-  const EditGoalModal = () => {
-   
-    return null;
-  };
 
   if (loading) {
     return (
@@ -306,21 +258,14 @@ const GoalsScreen = ({ navigation }) => {
       <View style={styles.header}>
         <Text style={styles.title}>Goals</Text>
       </View>
-
       <ScrollView style={styles.content}>
-        {/* Goals Overview */}
         <View style={styles.goalsContainer}>
           <Text style={styles.sectionTitle}>Your Fitness Goals</Text>
-          
           {Object.keys(goals).map(goalType => (
             <GoalCard key={goalType} goalType={goalType} />
           ))}
         </View>
-
-        {/* Quick Actions */}
         <QuickActions />
-
-        {/* Motivation Section */}
         <View style={styles.motivationContainer}>
           <Text style={styles.motivationTitle}>Stay Motivated</Text>
           <Text style={styles.motivationText}>
@@ -511,67 +456,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'white',
     opacity: 0.8,
-  },
-  
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalCancel: {
-    color: '#007AFF',
-    fontSize: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  modalSave: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalContent: {
-    flex: 1,
-  },
-  modalScrollContent: {
-    padding: 20,
-    alignItems: 'center',
-    paddingBottom: 100,
-  },
-  editGoalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  goalInput: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 8,
-    fontSize: 18,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    textAlign: 'center',
-    width: 200,
-    marginBottom: 15,
-  },
-  goalHint: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
   },
 });
 
