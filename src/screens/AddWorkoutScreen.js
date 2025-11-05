@@ -14,6 +14,7 @@ import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestor
 import { auth, db } from '../services/firebase';
 import { useTheme } from './ThemeContext';
 import { lightTheme, darkTheme } from './themes';
+import { recordWorkoutGamification } from '../gamification/engine';
 
 // Exercise database (unchanged)
 const EXERCISE_DATABASE = {
@@ -119,6 +120,11 @@ const AddWorkoutScreen = ({ navigation }) => {
 
       await addDoc(collection(db, 'workouts'), workoutData);
       await updateDoc(doc(db, 'users', auth.currentUser.uid), { totalWorkouts: increment(1) });
+      try {
+        await recordWorkoutGamification(auth.currentUser.uid, workoutData, new Date());
+      } catch (e) {
+        console.log('Gamification (workout) error:', e);
+      }
 
       Alert.alert('Success', 'Workout logged successfully!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
     } catch (error) {

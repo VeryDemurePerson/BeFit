@@ -14,6 +14,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { useTheme } from './ThemeContext';
 import { lightTheme, darkTheme } from './themes';
+import { recordMealGamification } from '../gamification/engine';
 
 const AddMealScreen = ({ navigation, route }) => {
   const { mealType = 'Breakfast' } = route.params || {};
@@ -103,6 +104,11 @@ const AddMealScreen = ({ navigation, route }) => {
       Alert.alert('Error', `Failed to save meal: ${err.message}`);
     } finally {
       setLoading(false);
+    }
+    try {
+      await recordMealGamification(auth.currentUser.uid, new Date());
+    } catch (e) {
+      console.log('Gamification (meal) error:', e);
     }
   };
 
