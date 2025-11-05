@@ -133,9 +133,11 @@ const ProfileScreen = ({ navigation }) => {
       }
 
       // Safe string capitalization
-      const formattedWorkoutType = favoriteWorkoutType && favoriteWorkoutType !== 'None'
-        ? favoriteWorkoutType.charAt(0).toUpperCase() + favoriteWorkoutType.slice(1)
-        : 'None';
+      const formattedWorkoutType =
+        favoriteWorkoutType && favoriteWorkoutType !== "None"
+          ? favoriteWorkoutType.charAt(0).toUpperCase() +
+            favoriteWorkoutType.slice(1)
+          : "None";
 
       setStats({
         totalWorkouts: workouts.length,
@@ -170,6 +172,12 @@ const ProfileScreen = ({ navigation }) => {
       },
     ]);
   };
+  <TouchableOpacity
+    onPress={() => navigation.navigate("NotificationSettings")}
+    style={styles.settingButton}
+  >
+    <Text>🔔 Notification Settings</Text>
+  </TouchableOpacity>;
 
   const StatCard = ({ icon, title, value, subtitle, color = "#007AFF" }) => (
     <View style={[styles.statCard, { borderTopColor: color }]}>
@@ -353,6 +361,13 @@ const ProfileScreen = ({ navigation }) => {
             />
           </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.settingButton}
+          onPress={() => navigation.navigate("NotificationSettings")}
+        >
+          <Text style={styles.settingButtonText}>🔔 Notification Settings</Text>
+        </TouchableOpacity>
 
         {/* Sign Out Button */}
         <View style={styles.signOutContainer}>
@@ -550,6 +565,18 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  settingButton: {
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 10,
+    alignItems: "center",
+  },
+  settingButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 
