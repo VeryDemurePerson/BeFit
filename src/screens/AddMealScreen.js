@@ -1,4 +1,4 @@
-// src/screens/AddMealScreen.js — Light/Dark Mode Ready
+// src/screens/AddMealScreen.js — Light/Dark Mode Ready (Fixed)
 import React, { useState } from 'react';
 import {
   View,
@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
@@ -17,7 +17,7 @@ import { lightTheme, darkTheme } from './themes';
 
 const AddMealScreen = ({ navigation, route }) => {
   const { mealType = 'Breakfast' } = route.params || {};
-  const [foods, setFoods] = useState([{ id: Date.now(), name: '', calories: '', protein: 0, carbs: 0, fat: 0 }]);
+  const [foods, setFoods] = useState([{ id: Date.now(), name: '', calories: '' }]);
   const [loading, setLoading] = useState(false);
   const { theme } = useTheme();
   const colors = theme === 'light' ? lightTheme : darkTheme;
@@ -27,7 +27,6 @@ const AddMealScreen = ({ navigation, route }) => {
     'Banana (medium)': 105,
     'Chicken breast (100g)': 165,
     'Rice (1 cup cooked)': 205,
-    'Bread (1 slice)': 80,
     'Egg (large)': 70,
     'Avocado (medium)': 234,
     'Salmon (100g)': 208,
@@ -40,66 +39,15 @@ const AddMealScreen = ({ navigation, route }) => {
     'Pasta (1 cup cooked)': 220,
   };
 
-  const addFoodField = () => setFoods([...foods, { name: '', calories: '' }]);
+  const addFoodField = () => setFoods([...foods, { id: Date.now(), name: '', calories: '' }]);
   const removeFoodField = (index) => foods.length > 1 && setFoods(foods.filter((_, i) => i !== index));
   const updateFood = (index, field, value) =>
     setFoods(foods.map((food, i) => (i === index ? { ...food, [field]: value } : food)));
 
-  const performSearch = useCallback(async (text, id) => {
-    console.log('performSearch called with:', text, 'for id:', id);
-    const trimmedText = text?.trim();
-    if (!trimmedText || trimmedText.length < 2 || !/[a-zA-Z0-9]/.test(trimmedText)) {
-      setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
-      setSearchLoading(prev => ({ ...prev, [id]: false }));
-      return;
-    }
-    
-    setSearchLoading(prev => ({ ...prev, [id]: true }));
-    try {
-      const results = await searchFoods(trimmedText);
-      console.log('Search completed, got', results?.length || 0, 'results for id', id);
-      
-      setSearchSuggestions(prev => ({ ...prev, [id]: results || [] }));
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
-    } finally {
-      setSearchLoading(prev => ({ ...prev, [id]: false }));
-    }
-  }, []);
-
-  const handleFoodNameChange = useCallback((text, id) => {
-    console.log('handleFoodNameChange called with:', text, 'for id:', id);
-    
-    // Update the food name immediately
-    setFoods(prevFoods => 
-      prevFoods.map((food) => 
-        food.id === id ? { ...food, name: text } : food
-      )
-    );
-    
-    if (searchTimeouts.current[id]) {
-      clearTimeout(searchTimeouts.current[id]);
-    }
-    
-    const trimmedText = text?.trim();
-    if (trimmedText && trimmedText.length >= 2 && /[a-zA-Z0-9]/.test(trimmedText)) {
-      searchTimeouts.current[id] = setTimeout(() => {
-        performSearch(text, id);
-      }, 400);
-    } else {
-      setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
-      setSearchLoading(prev => ({ ...prev, [id]: false }));
-    }
-  }, [performSearch]);
-
-  useEffect(() => {
-    return () => {
-      Object.values(searchTimeouts.current).forEach(timeout => {
-        if (timeout) clearTimeout(timeout);
-      });
-    };
-  }, []);
+  const selectCommonFood = (name, calories, index) => {
+    updateFood(index, 'name', name);
+    updateFood(index, 'calories', calories.toString());
+  };
 
   const saveMeal = async () => {
     const validFoods = foods.filter(f => f.name.trim() && f.calories);
@@ -167,6 +115,7 @@ const AddMealScreen = ({ navigation, route }) => {
             <Text style={[styles.removeButton, { color: '#FF3B30' }]}>Remove</Text>
           </TouchableOpacity>
         )}
+      </View>
 
       <Text style={[styles.inputLabel, { color: colors.text }]}>Food Name</Text>
       <TextInput
@@ -245,7 +194,6 @@ const AddMealScreen = ({ navigation, route }) => {
             ))}
           </View>
         </View>
-      </View>
 
         {foods.map((food, i) => (
           <FoodInput key={i} food={food} index={i} />
