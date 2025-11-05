@@ -1,5 +1,4 @@
-// src/screens/EditWorkoutScreen.js
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,31 +8,27 @@ import {
   ScrollView,
   TextInput,
   Alert,
-} from 'react-native';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { useTheme } from './ThemeContext';
-import { lightTheme, darkTheme } from './themes';
+} from "react-native";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../services/firebase";
 
 const EditWorkoutScreen = ({ navigation, route }) => {
   const { workout } = route.params;
-  const { theme } = useTheme();
-  const colors = theme === 'light' ? lightTheme : darkTheme;
 
   const [editedWorkout, setEditedWorkout] = useState({
-    exercise: workout.exercise || '',
-    duration: workout.duration?.toString() || '',
-    sets: workout.sets?.toString() || '',
-    reps: workout.reps?.toString() || '',
-    weight: workout.weight?.toString() || '',
-    notes: workout.notes || '',
-    type: workout.type || 'strength',
+    exercise: workout.exercise || "",
+    duration: workout.duration?.toString() || "",
+    sets: workout.sets?.toString() || "",
+    reps: workout.reps?.toString() || "",
+    weight: workout.weight?.toString() || "",
+    notes: workout.notes || "",
+    type: workout.type || "strength",
   });
   const [loading, setLoading] = useState(false);
 
   const updateWorkout = async () => {
     if (!editedWorkout.exercise || !editedWorkout.duration) {
-      Alert.alert('Error', 'Please fill in exercise name and duration');
+      Alert.alert("Error", "Please fill in exercise name and duration");
       return;
     }
 
@@ -50,12 +45,17 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         updatedAt: new Date(),
       };
 
-      await updateDoc(doc(db, 'workouts', workout.id), workoutData);
-      Alert.alert('Success', 'Workout updated successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() },
+      await updateDoc(doc(db, "workouts", workout.id), workoutData);
+
+      Alert.alert("Success", "Workout updated successfully!", [
+        {
+          text: "OK",
+          onPress: () => navigation.goBack(),
+        },
       ]);
     } catch (error) {
-      Alert.alert('Error', `Failed to update workout: ${error.message}`);
+      console.error("Error updating workout:", error);
+      Alert.alert("Error", `Failed to update workout: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -75,13 +75,8 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Edit Workout</Text>
         <TouchableOpacity onPress={updateWorkout} disabled={loading}>
-          <Text
-            style={[
-              styles.saveButton,
-              { color: colors.accent, opacity: loading ? 0.5 : 1 },
-            ]}
-          >
-            {loading ? 'Saving...' : 'Save'}
+          <Text style={[styles.saveButton, loading && styles.disabled]}>
+            {loading ? "Saving..." : "Save"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -95,32 +90,24 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         {/* Workout Type Selector */}
         <Text style={[styles.inputLabel, { color: colors.text }]}>Workout Type</Text>
         <View style={styles.typeSelector}>
-          {['strength', 'cardio', 'flexibility'].map((type) => (
+          {["strength", "cardio", "flexibility"].map((type) => (
             <TouchableOpacity
               key={type}
               style={[
                 styles.typeButton,
-                {
-                  backgroundColor:
-                    editedWorkout.type === type ? colors.accent : colors.card,
-                  borderColor:
-                    editedWorkout.type === type ? colors.accent : colors.border,
-                },
+                editedWorkout.type === type && styles.typeButtonActive,
               ]}
               onPress={() => setEditedWorkout((prev) => ({ ...prev, type }))}
             >
               <Text
                 style={[
                   styles.typeButtonText,
-                  {
-                    color:
-                      editedWorkout.type === type
-                        ? colors.inverseText
-                        : colors.text,
-                  },
+                  editedWorkout.type === type && styles.typeButtonTextActive,
                 ]}
               >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
+                {type
+                  ? type.charAt(0).toUpperCase() + type.slice(1)
+                  : "Unknown"}
               </Text>
             </TouchableOpacity>
           ))}
@@ -165,8 +152,8 @@ const EditWorkoutScreen = ({ navigation, route }) => {
           keyboardType="numeric"
         />
 
-        {/* Strength Fields */}
-        {editedWorkout.type === 'strength' && (
+        {/* Sets (for strength training) */}
+        {editedWorkout.type === "strength" && (
           <>
             <Text style={[styles.inputLabel, { color: colors.text }]}>Sets</Text>
             <TextInput
@@ -243,62 +230,37 @@ const EditWorkoutScreen = ({ navigation, route }) => {
           onChangeText={(text) =>
             setEditedWorkout((prev) => ({ ...prev, notes: text }))
           }
-          placeholder="How did it feel?"
-          placeholderTextColor={colors.subtext}
+          placeholder="How did it feel? Any observations..."
           multiline
         />
 
-        {/* Original Date */}
-        <View
-          style={[
-            styles.originalDateContainer,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <Text style={[styles.originalDateLabel, { color: colors.subtext }]}>
-            Original Date:
-          </Text>
-          <Text style={[styles.originalDateValue, { color: colors.text }]}>
+        {/* Original Date Display */}
+        <View style={styles.originalDateContainer}>
+          <Text style={styles.originalDateLabel}>Original Date:</Text>
+          <Text style={styles.originalDateValue}>
             {workout.createdAt?.toDate
-              ? new Date(workout.createdAt.toDate()).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : 'Unknown date'}
+              ? new Date(workout.createdAt.toDate()).toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }
+                )
+              : "Unknown date"}
           </Text>
         </View>
 
         {/* Warning */}
-        <View
-          style={[
-            styles.warningContainer,
-            {
-              backgroundColor:
-                theme === 'light' ? '#FFF3CD' : '#403418',
-              borderColor: theme === 'light' ? '#FFEAA7' : '#66522b',
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.warningTitle,
-              { color: theme === 'light' ? '#856404' : '#ffcd6a' },
-            ]}
-          >
-            Note
-          </Text>
-          <Text
-            style={[
-              styles.warningText,
-              { color: theme === 'light' ? '#856404' : '#ffcd6a' },
-            ]}
-          >
-            Editing this workout will update the information but keep the original
-            date. The changes will be reflected in your progress statistics.
+        <View style={styles.warningContainer}>
+          <Text style={styles.warningTitle}>Note</Text>
+          <Text style={styles.warningText}>
+            Editing this workout will update the information but keep the
+            original date. The changes will be reflected in your progress
+            statistics.
           </Text>
         </View>
       </ScrollView>
@@ -307,14 +269,50 @@ const EditWorkoutScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 15,
+    backgroundColor: "white",
     borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  cancelButton: {
+    color: "#007AFF",
+    fontSize: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  saveButton: {
+    color: "#007AFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+    marginTop: 20,
   },
   cancelButton: { fontSize: 16 },
   title: { fontSize: 18, fontWeight: 'bold' },
@@ -323,11 +321,21 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20, paddingBottom: 40 },
   inputLabel: { fontSize: 16, fontWeight: '600', marginBottom: 8, marginTop: 20 },
   input: {
+    backgroundColor: "white",
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 8,
     fontSize: 16,
     borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  notesInput: {
+    height: 100,
+    textAlignVertical: "top",
+  },
+  typeSelector: {
+    flexDirection: "row",
+    marginBottom: 10,
   },
   notesInput: { height: 100, textAlignVertical: 'top' },
   typeSelector: { flexDirection: 'row', marginBottom: 10 },
@@ -336,8 +344,59 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
+    borderColor: "#ddd",
     marginRight: 10,
-    alignItems: 'center',
+    alignItems: "center",
+    backgroundColor: "white",
+  },
+  typeButtonActive: {
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
+  },
+  typeButtonText: {
+    color: "#666",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  typeButtonTextActive: {
+    color: "white",
+  },
+  originalDateContainer: {
+    backgroundColor: "white",
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  originalDateLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
+    marginBottom: 5,
+  },
+  originalDateValue: {
+    fontSize: 16,
+    color: "#333",
+  },
+  warningContainer: {
+    backgroundColor: "#FFF3CD",
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#FFEAA7",
+  },
+  warningTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#856404",
+    marginBottom: 8,
+  },
+  warningText: {
+    fontSize: 14,
+    color: "#856404",
+    lineHeight: 20,
   },
   typeButtonText: { fontSize: 14, fontWeight: '600' },
   originalDateContainer: { padding: 15, borderRadius: 8, marginTop: 20, borderWidth: 1 },

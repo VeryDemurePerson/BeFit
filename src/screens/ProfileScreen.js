@@ -41,14 +41,95 @@ const ProfileScreen = ({ navigation }) => {
     fetchUser();
   }, []);
 
-  const logout = async () => {
-    try {
-      await auth.signOut();
-      Alert.alert('Logged out', 'You have been signed out successfully');
+      // Safe string capitalization
+      const formattedWorkoutType =
+        favoriteWorkoutType && favoriteWorkoutType !== "None"
+          ? favoriteWorkoutType.charAt(0).toUpperCase() +
+            favoriteWorkoutType.slice(1)
+          : "None";
+
+      setStats({
+        totalWorkouts: workouts.length,
+        totalDuration,
+        totalWaterGlasses,
+        joinDate: userData?.createdAt
+          ? new Date(userData.createdAt.toDate()).toLocaleDateString()
+          : "Unknown",
+        currentStreak,
+        favoriteWorkoutType:
+          favoriteWorkoutType.charAt(0).toUpperCase() +
+          favoriteWorkoutType.slice(1),
+      });
     } catch (error) {
       Alert.alert('Error', error.message);
     }
   };
+
+  const handleSignOut = async () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await signOut(auth);
+          } catch (error) {
+            Alert.alert("Error", "Failed to sign out");
+          }
+        },
+      },
+    ]);
+  };
+  <TouchableOpacity
+    onPress={() => navigation.navigate("NotificationSettings")}
+    style={styles.settingButton}
+  >
+    <Text>🔔 Notification Settings</Text>
+  </TouchableOpacity>;
+
+  const StatCard = ({ icon, title, value, subtitle, color = "#007AFF" }) => (
+    <View style={[styles.statCard, { borderTopColor: color }]}>
+      <Text style={styles.statIcon}>{icon}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statTitle}>{title}</Text>
+      {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
+    </View>
+  );
+
+  const InfoRow = ({ label, value, onPress }) => (
+    <TouchableOpacity
+      style={styles.infoRow}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      <Text style={styles.infoLabel}>{label}</Text>
+      <View style={styles.infoValueContainer}>
+        <Text style={styles.infoValue}>{value || "Not set"}</Text>
+        {onPress && <Text style={styles.infoArrow}>›</Text>}
+      </View>
+    </TouchableOpacity>
+  );
+
+  const ActionButton = ({ title, onPress, color = "#007AFF", icon }) => (
+    <TouchableOpacity
+      style={[styles.actionButton, { backgroundColor: color }]}
+      onPress={onPress}
+    >
+      {icon && <Text style={styles.actionIcon}>{icon}</Text>}
+      <Text style={styles.actionText}>{title}</Text>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -95,6 +176,15 @@ const ProfileScreen = ({ navigation }) => {
             />
           </View>
 
+        <TouchableOpacity
+          style={styles.settingButton}
+          onPress={() => navigation.navigate("NotificationSettings")}
+        >
+          <Text style={styles.settingButtonText}>🔔 Notification Settings</Text>
+        </TouchableOpacity>
+
+        {/* Sign Out Button */}
+        <View style={styles.signOutContainer}>
           <TouchableOpacity
             style={[styles.option, { backgroundColor: '#FF3B30' }]}
             onPress={logout}
@@ -142,6 +232,18 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  settingButton: {
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 10,
+    alignItems: "center",
+  },
+  settingButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 
