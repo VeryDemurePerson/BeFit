@@ -15,6 +15,7 @@ import { auth, db } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from './ThemeContext';
 import { lightTheme, darkTheme } from './themes';
+import { recordWaterGamification } from '../gamification/engine';
 
 const GoalsScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -48,7 +49,12 @@ const GoalsScreen = ({ navigation }) => {
     try {
       const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
       if (userDoc.exists() && userDoc.data().goals) {
-        setGoals(userDoc.data().goals);
+        // ✅ Merge Firestore goals with defaults so all show up
+        const userGoals = userDoc.data().goals;
+        setGoals(prev => ({
+          ...prev,
+          ...userGoals,
+        }));
       }
       await calculateProgress();
     } catch (error) {
@@ -65,13 +71,12 @@ const GoalsScreen = ({ navigation }) => {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const today = new Date().toISOString().split('T')[0];
 
-      let workouts = [];
       const workoutsQuery = query(
         collection(db, 'workouts'),
         where('userId', '==', auth.currentUser.uid)
       );
       const workoutsSnapshot = await getDocs(workoutsQuery);
-      workouts = workoutsSnapshot.docs.map(doc => doc.data());
+      const workouts = workoutsSnapshot.docs.map(doc => doc.data());
 
       const thisWeekWorkouts = workouts.filter(w => {
         const date = w.createdAt?.toDate?.() || new Date(w.createdAt);
@@ -85,9 +90,9 @@ const GoalsScreen = ({ navigation }) => {
         return date >= monthStart;
       });
 
-      let dailyWaterCount = 0;
-      const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
-      dailyWaterCount = waterDoc.exists() ? waterDoc.data().glasses : 0;
+      const todayKey = `${auth.currentUser.uid}_${today}`;
+      const waterDoc = await getDoc(doc(db, 'water_intake', todayKey));
+      const dailyWaterCount = waterDoc.exists() ? waterDoc.data().glasses : 0;
 
       setProgress({
         weeklyWorkouts: weeklyWorkoutsCount,
@@ -117,6 +122,12 @@ const GoalsScreen = ({ navigation }) => {
         },
         { merge: true }
       );
+
+      try {
+        await recordWaterGamification(auth.currentUser.uid, new Date());
+      } catch (e) {
+        console.log('Gamification (water) error:', e);
+      }
 
       setProgress(prev => ({
         ...prev,
