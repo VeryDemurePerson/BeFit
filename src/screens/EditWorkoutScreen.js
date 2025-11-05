@@ -1,380 +1,351 @@
-// src/screens/EditWorkoutScreen.js - Separate Edit/Add Screen
-import React, { useState, useEffect } from 'react';
+// src/screens/EditWorkoutScreen.js
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
   TextInput,
   Alert,
 } from 'react-native';
-import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
-import { auth, db } from '../services/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../services/firebase';
+import { useTheme } from './ThemeContext';
+import { lightTheme, darkTheme } from './themes';
 
 const EditWorkoutScreen = ({ navigation, route }) => {
-  const { mode, workout } = route.params || { mode: 'add' };
-  const isEditing = mode === 'edit';
-  
-  const [formData, setFormData] = useState({
-    exercise: '',
-    duration: '',
-    sets: '',
-    reps: '',
-    weight: '',
-    notes: '',
-    type: 'strength'
+  const { workout } = route.params;
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
+
+  const [editedWorkout, setEditedWorkout] = useState({
+    exercise: workout.exercise || '',
+    duration: workout.duration?.toString() || '',
+    sets: workout.sets?.toString() || '',
+    reps: workout.reps?.toString() || '',
+    weight: workout.weight?.toString() || '',
+    notes: workout.notes || '',
+    type: workout.type || 'strength',
   });
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const workoutTypes = ['strength', 'cardio', 'flexibility'];
+  const updateWorkout = async () => {
+    if (!editedWorkout.exercise || !editedWorkout.duration) {
+      Alert.alert('Error', 'Please fill in exercise name and duration');
+      return;
+    }
 
-  useEffect(() => {
-    if (isEditing && workout) {
-      setFormData({
-        exercise: workout.exercise || '',
-        duration: workout.duration?.toString() || '',
-        sets: workout.sets?.toString() || '',
-        reps: workout.reps?.toString() || '',
-        weight: workout.weight?.toString() || '',
-        notes: workout.notes || '',
-        type: workout.type || 'strength'
-      });
-    }
-  }, [isEditing, workout]);
-
-  const updateField = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const validateForm = () => {
-    if (!formData.exercise.trim()) {
-      Alert.alert('Error', 'Please enter an exercise name');
-      return false;
-    }
-    
-    if (!formData.duration.trim()) {
-      Alert.alert('Error', 'Please enter workout duration');
-      return false;
-    }
-    
-    const duration = parseInt(formData.duration);
-    if (isNaN(duration) || duration <= 0) {
-      Alert.alert('Error', 'Please enter a valid duration in minutes');
-      return false;
-    }
-    
-    // Validate numeric fields if provided
-    if (formData.sets && (isNaN(parseInt(formData.sets)) || parseInt(formData.sets) < 0)) {
-      Alert.alert('Error', 'Please enter a valid number of sets');
-      return false;
-    }
-    
-    if (formData.reps && (isNaN(parseInt(formData.reps)) || parseInt(formData.reps) < 0)) {
-      Alert.alert('Error', 'Please enter a valid number of reps');
-      return false;
-    }
-    
-    if (formData.weight && (isNaN(parseFloat(formData.weight)) || parseFloat(formData.weight) < 0)) {
-      Alert.alert('Error', 'Please enter a valid weight');
-      return false;
-    }
-    
-    return true;
-  };
-
-  const saveWorkout = async () => {
-    if (!validateForm()) return;
-
-    setSaving(true);
+    setLoading(true);
     try {
       const workoutData = {
-        exercise: formData.exercise.trim(),
-        duration: parseInt(formData.duration),
-        sets: formData.sets ? parseInt(formData.sets) : null,
-        reps: formData.reps ? parseInt(formData.reps) : null,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        notes: formData.notes.trim(),
-        type: formData.type,
-        userId: auth.currentUser.uid,
+        exercise: editedWorkout.exercise,
+        duration: parseInt(editedWorkout.duration),
+        sets: editedWorkout.sets ? parseInt(editedWorkout.sets) : null,
+        reps: editedWorkout.reps ? parseInt(editedWorkout.reps) : null,
+        weight: editedWorkout.weight ? parseFloat(editedWorkout.weight) : null,
+        notes: editedWorkout.notes,
+        type: editedWorkout.type,
+        updatedAt: new Date(),
       };
 
-      if (isEditing) {
-        await updateDoc(doc(db, 'workouts', workout.id), {
-          ...workoutData,
-          updatedAt: new Date(),
-        });
-        Alert.alert('Success', 'Workout updated successfully!');
-      } else {
-        await addDoc(collection(db, 'workouts'), {
-          ...workoutData,
-          createdAt: new Date(),
-          date: new Date().toDateString()
-        });
-        Alert.alert('Success', 'Workout logged successfully!');
-      }
-
-      navigation.goBack();
+      await updateDoc(doc(db, 'workouts', workout.id), workoutData);
+      Alert.alert('Success', 'Workout updated successfully!', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     } catch (error) {
-      console.error('Error saving workout:', error);
-      Alert.alert('Error', 'Failed to save workout');
+      Alert.alert('Error', `Failed to update workout: ${error.message}`);
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  const InputField = ({ label, field, placeholder, keyboardType = 'default', multiline = false }) => (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <TextInput
-        style={[styles.input, multiline && styles.multilineInput]}
-        value={formData[field]}
-        onChangeText={(value) => updateField(field, value)}
-        placeholder={placeholder}
-        keyboardType={keyboardType}
-        multiline={multiline}
-        returnKeyType={multiline ? 'default' : 'next'}
-      />
-    </View>
-  );
-
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
+          <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>
-          {isEditing ? 'Edit Workout' : 'Add Workout'}
-        </Text>
-        <TouchableOpacity onPress={saveWorkout} disabled={saving}>
-          <Text style={[styles.saveButton, saving && styles.disabled]}>
-            {saving ? 'Saving...' : 'Save'}
+        <Text style={[styles.title, { color: colors.text }]}>Edit Workout</Text>
+        <TouchableOpacity onPress={updateWorkout} disabled={loading}>
+          <Text
+            style={[
+              styles.saveButton,
+              { color: colors.accent, opacity: loading ? 0.5 : 1 },
+            ]}
+          >
+            {loading ? 'Saving...' : 'Save'}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Workout Type Selector */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Workout Type</Text>
-          <View style={styles.typeSelector}>
-            {workoutTypes.map((type) => (
-              <TouchableOpacity
-                key={type}
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Workout Type</Text>
+        <View style={styles.typeSelector}>
+          {['strength', 'cardio', 'flexibility'].map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[
+                styles.typeButton,
+                {
+                  backgroundColor:
+                    editedWorkout.type === type ? colors.accent : colors.card,
+                  borderColor:
+                    editedWorkout.type === type ? colors.accent : colors.border,
+                },
+              ]}
+              onPress={() => setEditedWorkout((prev) => ({ ...prev, type }))}
+            >
+              <Text
                 style={[
-                  styles.typeButton,
-                  formData.type === type && styles.typeButtonActive
-                ]}
-                onPress={() => updateField('type', type)}
-              >
-                <Text style={[
                   styles.typeButtonText,
-                  formData.type === type && styles.typeButtonTextActive
-                ]}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  {
+                    color:
+                      editedWorkout.type === type
+                        ? colors.inverseText
+                        : colors.text,
+                  },
+                ]}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Exercise Name */}
-        <InputField
-          label="Exercise Name *"
-          field="exercise"
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Exercise Name *</Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
+          value={editedWorkout.exercise}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, exercise: text }))
+          }
           placeholder="e.g., Push-ups, Running, Yoga"
+          placeholderTextColor={colors.subtext}
         />
 
         {/* Duration */}
-        <InputField
-          label="Duration (minutes) *"
-          field="duration"
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Duration (minutes) *</Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
+          value={editedWorkout.duration}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, duration: text }))
+          }
           placeholder="30"
+          placeholderTextColor={colors.subtext}
           keyboardType="numeric"
         />
 
-        {/* Strength Training Fields */}
-        {formData.type === 'strength' && (
+        {/* Strength Fields */}
+        {editedWorkout.type === 'strength' && (
           <>
-            <InputField
-              label="Sets"
-              field="sets"
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Sets</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={editedWorkout.sets}
+              onChangeText={(text) =>
+                setEditedWorkout((prev) => ({ ...prev, sets: text }))
+              }
               placeholder="3"
+              placeholderTextColor={colors.subtext}
               keyboardType="numeric"
             />
-            
-            <InputField
-              label="Reps"
-              field="reps"
+
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Reps</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={editedWorkout.reps}
+              onChangeText={(text) =>
+                setEditedWorkout((prev) => ({ ...prev, reps: text }))
+              }
               placeholder="12"
+              placeholderTextColor={colors.subtext}
               keyboardType="numeric"
             />
-            
-            <InputField
-              label="Weight (kg)"
-              field="weight"
+
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Weight (kg)</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={editedWorkout.weight}
+              onChangeText={(text) =>
+                setEditedWorkout((prev) => ({ ...prev, weight: text }))
+              }
               placeholder="20"
+              placeholderTextColor={colors.subtext}
               keyboardType="numeric"
             />
           </>
         )}
 
         {/* Notes */}
-        <InputField
-          label="Notes"
-          field="notes"
-          placeholder="How did it feel? Any observations..."
-          multiline={true}
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Notes</Text>
+        <TextInput
+          style={[
+            styles.input,
+            styles.notesInput,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
+          value={editedWorkout.notes}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, notes: text }))
+          }
+          placeholder="How did it feel?"
+          placeholderTextColor={colors.subtext}
+          multiline
         />
 
-        {/* Tips Section */}
-        <View style={styles.tipsContainer}>
-          <Text style={styles.tipsTitle}>Tips</Text>
-          {formData.type === 'strength' && (
-            <Text style={styles.tipText}>• Track your sets, reps, and weight for progress monitoring</Text>
-          )}
-          {formData.type === 'cardio' && (
-            <Text style={styles.tipText}>• Focus on duration and intensity level</Text>
-          )}
-          {formData.type === 'flexibility' && (
-            <Text style={styles.tipText}>• Note which muscle groups you stretched</Text>
-          )}
-          <Text style={styles.tipText}>• Add notes about how the workout felt</Text>
+        {/* Original Date */}
+        <View
+          style={[
+            styles.originalDateContainer,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.originalDateLabel, { color: colors.subtext }]}>
+            Original Date:
+          </Text>
+          <Text style={[styles.originalDateValue, { color: colors.text }]}>
+            {workout.createdAt?.toDate
+              ? new Date(workout.createdAt.toDate()).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : 'Unknown date'}
+          </Text>
         </View>
 
-        {/* Edit Info */}
-        {isEditing && (
-          <View style={styles.editInfo}>
-            <Text style={styles.editInfoText}>
-              Originally logged: {workout?.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown date'}
-            </Text>
-          </View>
-        )}
+        {/* Warning */}
+        <View
+          style={[
+            styles.warningContainer,
+            {
+              backgroundColor:
+                theme === 'light' ? '#FFF3CD' : '#403418',
+              borderColor: theme === 'light' ? '#FFEAA7' : '#66522b',
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.warningTitle,
+              { color: theme === 'light' ? '#856404' : '#ffcd6a' },
+            ]}
+          >
+            Note
+          </Text>
+          <Text
+            style={[
+              styles.warningText,
+              { color: theme === 'light' ? '#856404' : '#ffcd6a' },
+            ]}
+          >
+            Editing this workout will update the information but keep the original
+            date. The changes will be reflected in your progress statistics.
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
-  cancelButton: {
-    fontSize: 16,
-    color: '#FF3B30',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  saveButton: {
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
+  cancelButton: { fontSize: 16 },
+  title: { fontSize: 18, fontWeight: 'bold' },
+  saveButton: { fontSize: 16, fontWeight: '600' },
+  content: { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  inputLabel: { fontSize: 16, fontWeight: '600', marginBottom: 8, marginTop: 20 },
   input: {
-    backgroundColor: 'white',
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 8,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
   },
-  multilineInput: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  typeSelector: {
-    flexDirection: 'row',
-    gap: 10,
-  },
+  notesInput: { height: 100, textAlignVertical: 'top' },
+  typeSelector: { flexDirection: 'row', marginBottom: 10 },
   typeButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
+    marginRight: 10,
     alignItems: 'center',
-    backgroundColor: 'white',
   },
-  typeButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  typeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-  },
-  typeButtonTextActive: {
-    color: 'white',
-  },
-  tipsContainer: {
-    backgroundColor: '#E3F2FD',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  tipsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1976D2',
-    marginBottom: 8,
-  },
-  tipText: {
-    fontSize: 14,
-    color: '#1976D2',
-    marginBottom: 4,
-    lineHeight: 20,
-  },
-  editInfo: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  editInfoText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
+  typeButtonText: { fontSize: 14, fontWeight: '600' },
+  originalDateContainer: { padding: 15, borderRadius: 8, marginTop: 20, borderWidth: 1 },
+  originalDateLabel: { fontSize: 14, fontWeight: '600', marginBottom: 5 },
+  originalDateValue: { fontSize: 16 },
+  warningContainer: { padding: 15, borderRadius: 8, marginTop: 20, borderWidth: 1 },
+  warningTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  warningText: { fontSize: 14, lineHeight: 20 },
 });
 
 export default EditWorkoutScreen;
