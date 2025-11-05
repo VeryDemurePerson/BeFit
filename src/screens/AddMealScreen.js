@@ -25,13 +25,6 @@ const AddMealScreen = ({ navigation, route }) => {
   const addFoodField = () => setFoods([...foods, { id: Date.now(), name: '', calories: '', protein: 0, carbs: 0, fat: 0 }]);
   const removeFoodField = (id) => foods.length > 1 && setFoods(foods.filter((food) => food.id !== id));
 
-  const updateFood = (index, field, value) => {
-    const updatedFoods = foods.map((food, i) =>
-      i === index ? { ...food, [field]: value } : food
-    );
-    setFoods(updatedFoods);
-  };
-
   const performSearch = useCallback(async (text, id) => {
     console.log('performSearch called with:', text, 'for id:', id);
     const trimmedText = text?.trim();
@@ -67,14 +60,18 @@ const AddMealScreen = ({ navigation, route }) => {
     
     if (searchTimeouts.current[id]) {
       clearTimeout(searchTimeouts.current[id]);
+      console.log('Cleared previous timeout for id:', id);
     }
     
     const trimmedText = text?.trim();
     if (trimmedText && trimmedText.length >= 2 && /[a-zA-Z0-9]/.test(trimmedText)) {
+      console.log('Setting timeout to search for:', trimmedText);
       searchTimeouts.current[id] = setTimeout(() => {
+        console.log('Timeout fired! Performing search for id:', id);
         performSearch(text, id);
       }, 400);
     } else {
+      console.log('Text too short or invalid, clearing suggestions for id:', id);
       setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
       setSearchLoading(prev => ({ ...prev, [id]: false }));
     }
@@ -154,47 +151,14 @@ const AddMealScreen = ({ navigation, route }) => {
     }
   };
 
-  const FoodInput = ({ food, suggestions, loadingSuggestions }) => {
-    const [localName, setLocalName] = useState(food.name);
-    const searchTimeoutRef = useRef(null);
-
-    // Sync local state with prop changes (from suggestions)
-    useEffect(() => {
-      if (food.name !== localName) {
-        setLocalName(food.name);
-      }
-    }, [food.name]);
-
-    const handleTextChange = (text) => {
-      setLocalName(text);
-      
-      // Update parent state
-      setFoods(prevFoods => 
-        prevFoods.map((f) => 
-          f.id === food.id ? { ...f, name: text } : f
-        )
-      );
-
-      // Clear existing timeout
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-
-      // Search after delay
-      const trimmedText = text?.trim();
-      if (trimmedText && trimmedText.length >= 2 && /[a-zA-Z0-9]/.test(trimmedText)) {
-        searchTimeoutRef.current = setTimeout(() => {
-          performSearch(text, food.id);
-        }, 400);
-      } else {
-        setSearchSuggestions(prev => ({ ...prev, [food.id]: [] }));
-        setSearchLoading(prev => ({ ...prev, [food.id]: false }));
-      }
-    };
+  const FoodInput = ({ food }) => {
+    const suggestions = searchSuggestions[food.id] || [];
+    const loadingSuggestions = searchLoading[food.id] || false;
 
     const handleSelectSuggestion = (item) => {
-      setLocalName(item.name);
+      console.log('Selecting suggestion:', item.name);
       
+      // Update all food properties at once
       setFoods(prevFoods => 
         prevFoods.map((f) => 
           f.id === food.id ? {
@@ -208,6 +172,7 @@ const AddMealScreen = ({ navigation, route }) => {
         )
       );
       
+      // Clear suggestions for this input
       setSearchSuggestions(prev => ({ ...prev, [food.id]: [] }));
     };
 
@@ -227,14 +192,6 @@ const AddMealScreen = ({ navigation, route }) => {
       );
     };
 
-    useEffect(() => {
-      return () => {
-        if (searchTimeoutRef.current) {
-          clearTimeout(searchTimeoutRef.current);
-        }
-      };
-    }, []);
-
     return (
       <View style={styles.foodInputContainer}>
         <View style={styles.foodInputHeader}>
@@ -249,8 +206,8 @@ const AddMealScreen = ({ navigation, route }) => {
         <Text style={styles.inputLabel}>Food Name</Text>
         <TextInput
           style={styles.input}
-          value={localName}
-          onChangeText={handleTextChange}
+          value={food.name}
+          onChangeText={(text) => handleFoodNameChange(text, food.id)}
           placeholder="e.g., Chicken breast"
         />
 
@@ -371,12 +328,7 @@ const AddMealScreen = ({ navigation, route }) => {
       </View>
 
       {foods.map((food) => (
-        <FoodInput 
-          key={food.id} 
-          food={food}
-          suggestions={searchSuggestions[food.id] || []}
-          loadingSuggestions={searchLoading[food.id] || false}
-        />
+        <FoodInput key={food.id} food={food} />
       ))}
 
       <TouchableOpacity style={styles.addFoodButton} onPress={addFoodField}>
