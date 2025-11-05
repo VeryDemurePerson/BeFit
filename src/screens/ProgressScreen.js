@@ -1,3 +1,4 @@
+// All this is ai
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -142,7 +143,7 @@ const ProgressScreen = () => {
       });
 
       weeklyProgress.push({
-        week: `W${8-i}`,
+        week: `W${8 - i}`,
         workouts: weekWorkouts.length,
         duration: weekWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0),
       });
@@ -220,12 +221,12 @@ const ProgressScreen = () => {
                 <View style={styles.barBackground}>
                   <View
                     style={[
-                      styles.bar, 
-                      { 
+                      styles.bar,
+                      {
                         height: `${height}%`,
-                        backgroundColor: value > 0 ? '#007AFF' : '#E0E0E0'
-                      }
-                    ]} 
+                        backgroundColor: value > 0 ? "#007AFF" : "#E0E0E0",
+                      },
+                    ]}
                   />
                 </View>
                 <Text style={styles.barLabel}>{item.day || item.week}</Text>
