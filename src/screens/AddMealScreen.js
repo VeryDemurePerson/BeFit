@@ -1,4 +1,3 @@
-// src/screens/AddMealScreen.js - Food logging with USDA search
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
@@ -152,11 +151,27 @@ const AddMealScreen = ({ navigation, route }) => {
   };
 
   const FoodInput = ({ food }) => {
+    const [localName, setLocalName] = useState(food.name);
     const suggestions = searchSuggestions[food.id] || [];
     const loadingSuggestions = searchLoading[food.id] || false;
 
+    // Sync local name when food name changes from outside (like from suggestion selection)
+    useEffect(() => {
+      if (food.name !== localName) {
+        setLocalName(food.name);
+      }
+    }, [food.name]);
+
+    const handleNameChange = (text) => {
+      setLocalName(text);
+      handleFoodNameChange(text, food.id);
+    };
+
     const handleSelectSuggestion = (item) => {
       console.log('Selecting suggestion:', item.name);
+      
+      // Update local state immediately
+      setLocalName(item.name);
       
       // Update all food properties at once
       setFoods(prevFoods => 
@@ -206,8 +221,8 @@ const AddMealScreen = ({ navigation, route }) => {
         <Text style={styles.inputLabel}>Food Name</Text>
         <TextInput
           style={styles.input}
-          value={food.name}
-          onChangeText={(text) => handleFoodNameChange(text, food.id)}
+          value={localName}
+          onChangeText={handleNameChange}
           placeholder="e.g., Chicken breast"
         />
 
@@ -226,19 +241,42 @@ const AddMealScreen = ({ navigation, route }) => {
 
         {suggestions.length > 0 && (
           <View style={styles.suggestionsWrapper}>
-            <Text style={styles.suggestionsHeader}>{suggestions.length} suggestions found:</Text>
-            <ScrollView style={styles.suggestionsBox} nestedScrollEnabled>
+            <Text style={styles.suggestionsHeader}>Tap to select:</Text>
+            <ScrollView style={styles.suggestionsBox} nestedScrollEnabled showsVerticalScrollIndicator={true}>
               {suggestions.map((item, i) => (
                 <TouchableOpacity
                   key={`suggestion-${food.id}-${i}`}
-                  style={styles.suggestionItem}
+                  style={[
+                    styles.suggestionItem,
+                    i === suggestions.length - 1 && styles.suggestionItemLast
+                  ]}
                   onPress={() => handleSelectSuggestion(item)}
-                  activeOpacity={0.7}
+                  activeOpacity={0.6}
                 >
-                  <Text style={styles.suggestionName}>{item.name}</Text>
-                  <Text style={styles.suggestionMacros}>
-                    {item.calories} cal | P: {item.protein}g | C: {item.carbs}g | F: {item.fat}g
-                  </Text>
+                  <View style={styles.suggestionContent}>
+                    <Text style={styles.suggestionName} numberOfLines={2}>
+                      {item.name}
+                    </Text>
+                    <View style={styles.suggestionMacrosContainer}>
+                      <View style={styles.macroChip}>
+                        <Text style={styles.macroChipLabel}>Cal</Text>
+                        <Text style={styles.macroChipValue}>{item.calories}</Text>
+                      </View>
+                      <View style={styles.macroChip}>
+                        <Text style={styles.macroChipLabel}>P</Text>
+                        <Text style={styles.macroChipValue}>{item.protein}g</Text>
+                      </View>
+                      <View style={styles.macroChip}>
+                        <Text style={styles.macroChipLabel}>C</Text>
+                        <Text style={styles.macroChipValue}>{item.carbs}g</Text>
+                      </View>
+                      <View style={styles.macroChip}>
+                        <Text style={styles.macroChipLabel}>F</Text>
+                        <Text style={styles.macroChipValue}>{item.fat}g</Text>
+                      </View>
+                    </View>
+                  </View>
+                  <Text style={styles.chevron}>›</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -346,43 +384,109 @@ const AddMealScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  scrollContent: { padding: 20, paddingBottom: 40 },
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 15,
   },
-  cancelButton: { color: '#007AFF', fontSize: 16 },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  saveButton: { color: '#007AFF', fontSize: 16, fontWeight: '600' },
-  disabled: { opacity: 0.5 },
-  mealTypeContainer: { marginBottom: 25 },
-  mealTypeTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 10 },
-  mealTypeSelector: { flexDirection: 'row', justifyContent: 'space-between' },
-  mealTypeButton: {
-    flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 6,
-    borderWidth: 1, borderColor: '#ddd', marginHorizontal: 3, alignItems: 'center',
-    backgroundColor: 'white'
+  cancelButton: {
+    color: '#007AFF',
+    fontSize: 16,
   },
-  mealTypeButtonActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
-  mealTypeButtonText: { color: '#666', fontSize: 14, fontWeight: '500' },
-  mealTypeButtonTextActive: { color: 'white' },
-  foodInputContainer: { backgroundColor: 'white', padding: 20, borderRadius: 12, marginBottom: 20 },
-  foodInputHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
-  foodInputTitle: { fontSize: 16, fontWeight: '600', color: '#333' },
-  removeButton: { color: '#FF3B30', fontSize: 14, fontWeight: '500' },
-  inputLabel: { fontSize: 14, fontWeight: '500', color: '#333', marginBottom: 8 },
-  input: { 
-    backgroundColor: '#f8f8f8', 
-    paddingHorizontal: 15, 
-    paddingVertical: 12, 
-    borderRadius: 8, 
-    fontSize: 16, 
-    borderWidth: 1, 
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  saveButton: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  mealTypeContainer: {
+    marginBottom: 25,
+  },
+  mealTypeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+  },
+  mealTypeSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  mealTypeButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginHorizontal: 3,
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  mealTypeButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  mealTypeButtonText: {
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  mealTypeButtonTextActive: {
+    color: 'white',
+  },
+  foodInputContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  foodInputHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  foodInputTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  removeButton: {
+    color: '#FF3B30',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#f8f8f8',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 8,
+    fontSize: 16,
+    borderWidth: 1,
     borderColor: '#e0e0e0',
-    marginBottom: 15
+    marginBottom: 15,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -408,36 +512,72 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   suggestionsHeader: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 5,
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#007AFF',
+    marginBottom: 8,
+    fontWeight: '600',
   },
   suggestionsWrapper: {
     marginBottom: 15,
   },
-  suggestionsBox: { 
-    backgroundColor: 'white', 
-    borderRadius: 8, 
-    borderWidth: 1, 
-    borderColor: '#ddd', 
-    marginBottom: 15,
-    maxHeight: 200 
+  suggestionsBox: {
+    backgroundColor: '#FAFAFA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    overflow: 'hidden',
+    maxHeight: 300,
   },
-  suggestionItem: { 
-    padding: 12, 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#eee' 
+  suggestionItem: {
+    padding: 14,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  suggestionName: { 
-    fontSize: 14, 
-    fontWeight: '500', 
-    color: '#333',
-    marginBottom: 4
+  suggestionItemLast: {
+    borderBottomWidth: 0,
   },
-  suggestionMacros: { 
-    fontSize: 12, 
-    color: '#666' 
+  suggestionContent: {
+    flex: 1,
+    marginRight: 8,
+  },
+  suggestionName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  suggestionMacrosContainer: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  macroChip: {
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  macroChipLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666',
+  },
+  macroChipValue: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#1A1A1A',
+  },
+  chevron: {
+    fontSize: 24,
+    color: '#C7C7C7',
+    fontWeight: '300',
   },
   macrosContainer: {
     flexDirection: 'row',
@@ -458,39 +598,39 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     textAlign: 'center',
   },
-  addFoodButton: { 
-    backgroundColor: '#E3F2FD', 
-    padding: 15, 
-    borderRadius: 8, 
-    alignItems: 'center', 
-    marginBottom: 20, 
-    borderWidth: 1, 
-    borderColor: '#2196F3', 
-    borderStyle: 'dashed' 
+  addFoodButton: {
+    backgroundColor: '#E3F2FD',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#2196F3',
+    borderStyle: 'dashed',
   },
-  addFoodButtonText: { 
-    color: '#2196F3', 
-    fontSize: 16, 
-    fontWeight: '500' 
+  addFoodButtonText: {
+    color: '#2196F3',
+    fontSize: 16,
+    fontWeight: '500',
   },
-  totalContainer: { 
-    backgroundColor: 'white', 
-    padding: 20, 
-    borderRadius: 12, 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 20 
+  totalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  totalLabel: { 
-    fontSize: 18, 
-    fontWeight: '600', 
-    color: '#333' 
+  totalLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
   },
-  totalValue: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    color: '#007AFF' 
+  totalValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#007AFF',
   },
 });
 
