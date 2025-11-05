@@ -51,8 +51,16 @@ const NotificationSettingsScreen = () => {
           setWorkoutTime(new Date(parsed.workoutTime));
         }
 
+        // FIXED: Convert meal time strings back to Date objects
         if (parsed.mealReminders) {
-          setMealReminders(parsed.mealReminders);
+          const convertedMealReminders = {};
+          for (const [mealType, meal] of Object.entries(parsed.mealReminders)) {
+            convertedMealReminders[mealType] = {
+              enabled: meal.enabled,
+              time: meal.time instanceof Date ? meal.time : new Date(meal.time),
+            };
+          }
+          setMealReminders(convertedMealReminders);
         }
       }
     } catch (error) {
@@ -62,6 +70,15 @@ const NotificationSettingsScreen = () => {
 
   const saveSettings = async (updates) => {
     try {
+      // FIXED: Convert Date objects to ISO strings for storage
+      const mealRemindersToSave = {};
+      for (const [mealType, meal] of Object.entries(mealReminders)) {
+        mealRemindersToSave[mealType] = {
+          enabled: meal.enabled,
+          time: meal.time instanceof Date ? meal.time.toISOString() : meal.time,
+        };
+      }
+
       const currentSettings = {
         workoutEnabled,
         hydrationEnabled,
@@ -70,7 +87,7 @@ const NotificationSettingsScreen = () => {
         progressEnabled,
         hydrationInterval,
         workoutTime: workoutTime.toISOString(),
-        mealReminders,
+        mealReminders: mealRemindersToSave,
         ...updates,
       };
       await AsyncStorage.setItem(
@@ -181,6 +198,27 @@ const NotificationSettingsScreen = () => {
     }
   };
 
+  // FIXED: Added helper function to safely format time
+  const formatTime = (timeValue) => {
+    try {
+      // Ensure we have a valid Date object
+      const date = timeValue instanceof Date ? timeValue : new Date(timeValue);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return "08:00 AM";
+      }
+
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return "08:00 AM";
+    }
+  };
+
   const SettingRow = ({
     title,
     description,
@@ -197,12 +235,7 @@ const NotificationSettingsScreen = () => {
         )}
         {showTime && (
           <TouchableOpacity onPress={onTimePress} style={styles.timeButton}>
-            <Text style={styles.timeText}>
-              {showTime.toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </Text>
+            <Text style={styles.timeText}>{formatTime(showTime)}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -269,7 +302,8 @@ const NotificationSettingsScreen = () => {
                         styles.intervalButtonTextActive,
                     ]}
                   >
-                    {interval}h
+                    {interval}
+                    <Text style={styles.intervalButtonText}>h</Text>
                   </Text>
                 </TouchableOpacity>
               ))}

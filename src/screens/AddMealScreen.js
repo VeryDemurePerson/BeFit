@@ -1,5 +1,5 @@
 // src/screens/AddMealScreen.js - Simple food logging
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,36 +9,36 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-} from 'react-native';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../services/firebase';
+} from "react-native";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, db } from "../services/firebase";
 
 const AddMealScreen = ({ navigation, route }) => {
-  const { mealType = 'Breakfast' } = route.params || {};
-  const [foods, setFoods] = useState([{ name: '', calories: '' }]);
+  const { mealType = "Breakfast" } = route.params || {};
+  const [foods, setFoods] = useState([{ name: "", calories: "" }]);
   const [loading, setLoading] = useState(false);
 
   // Common food items with approximate calories
   const commonFoods = {
-    'Apple (medium)': 95,
-    'Banana (medium)': 105,
-    'Chicken breast (100g)': 165,
-    'Rice (1 cup cooked)': 205,
-    'Bread (1 slice)': 80,
-    'Egg (large)': 70,
-    'Avocado (medium)': 234,
-    'Salmon (100g)': 208,
-    'Yogurt (1 cup)': 150,
-    'Oatmeal (1 cup)': 154,
-    'Broccoli (1 cup)': 25,
-    'Sweet potato (medium)': 103,
-    'Almonds (1 oz)': 164,
-    'Orange (medium)': 62,
-    'Pasta (1 cup cooked)': 220,
+    "Apple (medium)": 95,
+    "Banana (medium)": 105,
+    "Chicken breast (100g)": 165,
+    "Rice (1 cup cooked)": 205,
+    "Bread (1 slice)": 80,
+    "Egg (large)": 70,
+    "Avocado (medium)": 234,
+    "Salmon (100g)": 208,
+    "Yogurt (1 cup)": 150,
+    "Oatmeal (1 cup)": 154,
+    "Broccoli (1 cup)": 25,
+    "Sweet potato (medium)": 103,
+    "Almonds (1 oz)": 164,
+    "Orange (medium)": 62,
+    "Pasta (1 cup cooked)": 220,
   };
 
   const addFoodField = () => {
-    setFoods([...foods, { name: '', calories: '' }]);
+    setFoods([...foods, { name: "", calories: "" }]);
   };
 
   const removeFoodField = (index) => {
@@ -48,69 +48,83 @@ const AddMealScreen = ({ navigation, route }) => {
   };
 
   const updateFood = (index, field, value) => {
-    const updatedFoods = foods.map((food, i) => 
+    const updatedFoods = foods.map((food, i) =>
       i === index ? { ...food, [field]: value } : food
     );
     setFoods(updatedFoods);
   };
 
   const selectCommonFood = (foodName, calories, index) => {
-    updateFood(index, 'name', foodName);
-    updateFood(index, 'calories', calories.toString());
+    updateFood(index, "name", foodName);
+    updateFood(index, "calories", calories.toString());
   };
 
   const saveMeal = async () => {
     // Validate inputs
-    const validFoods = foods.filter(food => food.name.trim() && food.calories);
+    const validFoods = foods.filter(
+      (food) => food.name.trim() && food.calories
+    );
     if (validFoods.length === 0) {
-      Alert.alert('Error', 'Please add at least one food item with calories');
+      Alert.alert("Error", "Please add at least one food item with calories");
       return;
     }
 
     // Check for valid calorie values
     for (let food of validFoods) {
       if (isNaN(food.calories) || parseInt(food.calories) < 0) {
-        Alert.alert('Error', `Please enter a valid calorie value for ${food.name}`);
+        Alert.alert(
+          "Error",
+          `Please enter a valid calorie value for ${food.name}`
+        );
         return;
       }
     }
 
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const nutritionDocRef = doc(db, 'nutrition', `${auth.currentUser.uid}_${today}`);
-      
+      const today = new Date().toISOString().split("T")[0];
+      const nutritionDocRef = doc(
+        db,
+        "nutrition",
+        `${auth.currentUser.uid}_${today}`
+      );
+
       // Get existing nutrition data
       const nutritionDoc = await getDoc(nutritionDocRef);
-      const existingData = nutritionDoc.exists() ? nutritionDoc.data() : {
-        meals: [],
-        totalCalories: 0,
-        nutrients: { protein: 0, carbs: 0, fat: 0, fiber: 0 }
-      };
+      const existingData = nutritionDoc.exists()
+        ? nutritionDoc.data()
+        : {
+            meals: [],
+            totalCalories: 0,
+            nutrients: { protein: 0, carbs: 0, fat: 0, fiber: 0 },
+          };
 
       // Calculate meal calories
-      const mealCalories = validFoods.reduce((sum, food) => sum + parseInt(food.calories), 0);
+      const mealCalories = validFoods.reduce(
+        (sum, food) => sum + parseInt(food.calories),
+        0
+      );
 
       // Estimate basic nutrients (simplified approximation)
       const estimatedNutrients = {
-        protein: Math.round(mealCalories * 0.15 / 4), // ~15% calories from protein
-        carbs: Math.round(mealCalories * 0.50 / 4),   // ~50% calories from carbs
-        fat: Math.round(mealCalories * 0.35 / 9),     // ~35% calories from fat
-        fiber: Math.round(mealCalories * 0.02)        // Rough fiber estimate
+        protein: Math.round((mealCalories * 0.15) / 4), // ~15% calories from protein
+        carbs: Math.round((mealCalories * 0.5) / 4), // ~50% calories from carbs
+        fat: Math.round((mealCalories * 0.35) / 9), // ~35% calories from fat
+        fiber: Math.round(mealCalories * 0.02), // Rough fiber estimate
       };
 
       // Create new meal entry
       const newMeal = {
         type: mealType,
-        time: new Date().toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
+        time: new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
         }),
-        foods: validFoods.map(food => ({
+        foods: validFoods.map((food) => ({
           name: food.name.trim(),
-          calories: parseInt(food.calories)
+          calories: parseInt(food.calories),
         })),
-        calories: mealCalories
+        calories: mealCalories,
       };
 
       // Update nutrition data
@@ -121,24 +135,24 @@ const AddMealScreen = ({ navigation, route }) => {
           protein: existingData.nutrients.protein + estimatedNutrients.protein,
           carbs: existingData.nutrients.carbs + estimatedNutrients.carbs,
           fat: existingData.nutrients.fat + estimatedNutrients.fat,
-          fiber: existingData.nutrients.fiber + estimatedNutrients.fiber
+          fiber: existingData.nutrients.fiber + estimatedNutrients.fiber,
         },
         date: today,
         userId: auth.currentUser.uid,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       await setDoc(nutritionDocRef, updatedData);
 
-      Alert.alert('Success', 'Meal logged successfully!', [
+      Alert.alert("Success", "Meal logged successfully!", [
         {
-          text: 'OK',
-          onPress: () => navigation.goBack()
-        }
+          text: "OK",
+          onPress: () => navigation.goBack(),
+        },
       ]);
     } catch (error) {
-      console.error('Error saving meal:', error);
-      Alert.alert('Error', `Failed to save meal: ${error.message}`);
+      console.error("Error saving meal:", error);
+      Alert.alert("Error", `Failed to save meal: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -159,7 +173,7 @@ const AddMealScreen = ({ navigation, route }) => {
       <TextInput
         style={styles.input}
         value={food.name}
-        onChangeText={(text) => updateFood(index, 'name', text)}
+        onChangeText={(text) => updateFood(index, "name", text)}
         placeholder="e.g., Grilled Chicken"
         returnKeyType="next"
       />
@@ -168,7 +182,7 @@ const AddMealScreen = ({ navigation, route }) => {
       <TextInput
         style={styles.input}
         value={food.calories}
-        onChangeText={(text) => updateFood(index, 'calories', text)}
+        onChangeText={(text) => updateFood(index, "calories", text)}
         placeholder="e.g., 165"
         keyboardType="numeric"
         returnKeyType="next"
@@ -176,7 +190,11 @@ const AddMealScreen = ({ navigation, route }) => {
 
       {/* Common foods suggestions */}
       <Text style={styles.suggestionsTitle}>Quick Add:</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestionsScroll}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.suggestionsScroll}
+      >
         {Object.entries(commonFoods).map(([foodName, calories]) => (
           <TouchableOpacity
             key={foodName}
@@ -201,29 +219,34 @@ const AddMealScreen = ({ navigation, route }) => {
         <Text style={styles.title}>Add {mealType}</Text>
         <TouchableOpacity onPress={saveMeal} disabled={loading}>
           <Text style={[styles.saveButton, loading && styles.disabled]}>
-            {loading ? 'Saving...' : 'Save'}
+            {loading ? "Saving..." : "Save"}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.mealTypeContainer}>
           <Text style={styles.mealTypeTitle}>Meal Type</Text>
           <View style={styles.mealTypeSelector}>
-            {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((type) => (
+            {["Breakfast", "Lunch", "Dinner", "Snack"].map((type) => (
               <TouchableOpacity
                 key={type}
                 style={[
                   styles.mealTypeButton,
-                  mealType === type && styles.mealTypeButtonActive
+                  mealType === type && styles.mealTypeButtonActive,
                 ]}
                 onPress={() => navigation.setParams({ mealType: type })}
               >
-                <Text style={[
-                  styles.mealTypeButtonText,
-                  mealType === type && styles.mealTypeButtonTextActive
-                ]}>
+                <Text
+                  style={[
+                    styles.mealTypeButtonText,
+                    mealType === type && styles.mealTypeButtonTextActive,
+                  ]}
+                >
                   {type}
                 </Text>
               </TouchableOpacity>
@@ -245,7 +268,11 @@ const AddMealScreen = ({ navigation, route }) => {
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total Calories:</Text>
           <Text style={styles.totalValue}>
-            {foods.reduce((sum, food) => sum + (parseInt(food.calories) || 0), 0)} cal
+            {foods.reduce(
+              (sum, food) => sum + (parseInt(food.calories) || 0),
+              0
+            )}{" "}
+            cal
           </Text>
         </View>
 
@@ -253,8 +280,9 @@ const AddMealScreen = ({ navigation, route }) => {
         <View style={styles.reminderContainer}>
           <Text style={styles.reminderTitle}>Remember</Text>
           <Text style={styles.reminderText}>
-            Focus on nourishing your body with whole foods. This tracker helps you understand your eating patterns, 
-            not restrict your intake. Listen to your body's hunger and fullness cues.
+            Focus on nourishing your body with whole foods. This tracker helps
+            you understand your eating patterns, not restrict your intake.
+            Listen to your body's hunger and fullness cues.
           </Text>
         </View>
       </ScrollView>
@@ -265,31 +293,31 @@ const AddMealScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   cancelButton: {
-    color: '#007AFF',
+    color: "#007AFF",
     fontSize: 16,
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   saveButton: {
-    color: '#007AFF',
+    color: "#007AFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   disabled: {
     opacity: 0.5,
@@ -306,13 +334,13 @@ const styles = StyleSheet.create({
   },
   mealTypeTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 10,
   },
   mealTypeSelector: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   mealTypeButton: {
     flex: 1,
@@ -320,70 +348,70 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     marginHorizontal: 3,
-    alignItems: 'center',
-    backgroundColor: 'white',
+    alignItems: "center",
+    backgroundColor: "white",
   },
   mealTypeButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
   },
   mealTypeButtonText: {
-    color: '#666',
+    color: "#666",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   mealTypeButtonTextActive: {
-    color: 'white',
+    color: "white",
   },
   foodInputContainer: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 20,
     borderRadius: 12,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   foodInputHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 15,
   },
   foodInputTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   removeButton: {
-    color: '#FF3B30',
+    color: "#FF3B30",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: "500",
+    color: "#333",
     marginBottom: 8,
     marginTop: 10,
   },
   input: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 8,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
   },
   suggestionsTitle: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: "500",
+    color: "#333",
     marginTop: 15,
     marginBottom: 10,
   },
@@ -391,49 +419,49 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   suggestionChip: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
     marginRight: 8,
-    alignItems: 'center',
+    alignItems: "center",
     minWidth: 80,
   },
   suggestionText: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#333',
-    textAlign: 'center',
+    fontWeight: "500",
+    color: "#333",
+    textAlign: "center",
     marginBottom: 2,
   },
   suggestionCalories: {
     fontSize: 10,
-    color: '#666',
+    color: "#666",
   },
   addFoodButton: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: "#E3F2FD",
     padding: 15,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#2196F3',
-    borderStyle: 'dashed',
+    borderColor: "#2196F3",
+    borderStyle: "dashed",
   },
   addFoodButtonText: {
-    color: '#2196F3',
+    color: "#2196F3",
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   totalContainer: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 20,
     borderRadius: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -441,28 +469,28 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   totalValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    fontWeight: "bold",
+    color: "#007AFF",
   },
   reminderContainer: {
-    backgroundColor: '#E8F5E8',
+    backgroundColor: "#E8F5E8",
     padding: 20,
     borderRadius: 12,
   },
   reminderTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2E7D32',
+    fontWeight: "600",
+    color: "#2E7D32",
     marginBottom: 10,
   },
   reminderText: {
     fontSize: 14,
-    color: '#2E7D32',
+    color: "#2E7D32",
     lineHeight: 20,
   },
 });

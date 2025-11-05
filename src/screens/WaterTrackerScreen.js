@@ -19,21 +19,6 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { auth, db } from "../services/firebase";
-import NotificationService from "../services/NotificationService";
-
-// When user logs water:
-const addWater = async (amount) => {
-  const newTotal = currentWater + amount;
-
-  if (newTotal >= dailyGoal && currentWater < dailyGoal) {
-    await NotificationService.sendGoalAchievement(
-      "hydration",
-      "Daily Water Intake"
-    );
-  }
-
-  // Your existing code...
-};
 
 const { width: screenWidth } = Dimensions.get("window");
 

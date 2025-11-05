@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,27 +8,27 @@ import {
   ScrollView,
   TextInput,
   Alert,
-} from 'react-native';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
+} from "react-native";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../services/firebase";
 
 const EditWorkoutScreen = ({ navigation, route }) => {
   const { workout } = route.params;
-  
+
   const [editedWorkout, setEditedWorkout] = useState({
-    exercise: workout.exercise || '',
-    duration: workout.duration?.toString() || '',
-    sets: workout.sets?.toString() || '',
-    reps: workout.reps?.toString() || '',
-    weight: workout.weight?.toString() || '',
-    notes: workout.notes || '',
-    type: workout.type || 'strength'
+    exercise: workout.exercise || "",
+    duration: workout.duration?.toString() || "",
+    sets: workout.sets?.toString() || "",
+    reps: workout.reps?.toString() || "",
+    weight: workout.weight?.toString() || "",
+    notes: workout.notes || "",
+    type: workout.type || "strength",
   });
   const [loading, setLoading] = useState(false);
 
   const updateWorkout = async () => {
     if (!editedWorkout.exercise || !editedWorkout.duration) {
-      Alert.alert('Error', 'Please fill in exercise name and duration');
+      Alert.alert("Error", "Please fill in exercise name and duration");
       return;
     }
 
@@ -42,20 +42,20 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         weight: editedWorkout.weight ? parseFloat(editedWorkout.weight) : null,
         notes: editedWorkout.notes,
         type: editedWorkout.type,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
-      await updateDoc(doc(db, 'workouts', workout.id), workoutData);
+      await updateDoc(doc(db, "workouts", workout.id), workoutData);
 
-      Alert.alert('Success', 'Workout updated successfully!', [
+      Alert.alert("Success", "Workout updated successfully!", [
         {
-          text: 'OK',
-          onPress: () => navigation.goBack()
-        }
+          text: "OK",
+          onPress: () => navigation.goBack(),
+        },
       ]);
     } catch (error) {
-      console.error('Error updating workout:', error);
-      Alert.alert('Error', `Failed to update workout: ${error.message}`);
+      console.error("Error updating workout:", error);
+      Alert.alert("Error", `Failed to update workout: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -71,13 +71,13 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         <Text style={styles.title}>Edit Workout</Text>
         <TouchableOpacity onPress={updateWorkout} disabled={loading}>
           <Text style={[styles.saveButton, loading && styles.disabled]}>
-            {loading ? 'Saving...' : 'Save'}
+            {loading ? "Saving..." : "Save"}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -85,20 +85,24 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         {/* Workout Type Selector */}
         <Text style={styles.inputLabel}>Workout Type</Text>
         <View style={styles.typeSelector}>
-          {['strength', 'cardio', 'flexibility'].map((type) => (
+          {["strength", "cardio", "flexibility"].map((type) => (
             <TouchableOpacity
               key={type}
               style={[
                 styles.typeButton,
-                editedWorkout.type === type && styles.typeButtonActive
+                editedWorkout.type === type && styles.typeButtonActive,
               ]}
-              onPress={() => setEditedWorkout(prev => ({ ...prev, type }))}
+              onPress={() => setEditedWorkout((prev) => ({ ...prev, type }))}
             >
-              <Text style={[
-                styles.typeButtonText,
-                editedWorkout.type === type && styles.typeButtonTextActive
-              ]}>
-                {type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Unknown'}
+              <Text
+                style={[
+                  styles.typeButtonText,
+                  editedWorkout.type === type && styles.typeButtonTextActive,
+                ]}
+              >
+                {type
+                  ? type.charAt(0).toUpperCase() + type.slice(1)
+                  : "Unknown"}
               </Text>
             </TouchableOpacity>
           ))}
@@ -109,7 +113,9 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         <TextInput
           style={styles.input}
           value={editedWorkout.exercise}
-          onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, exercise: text }))}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, exercise: text }))
+          }
           placeholder="e.g., Push-ups, Running, Yoga"
           returnKeyType="next"
         />
@@ -119,20 +125,24 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         <TextInput
           style={styles.input}
           value={editedWorkout.duration}
-          onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, duration: text }))}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, duration: text }))
+          }
           placeholder="30"
           keyboardType="numeric"
           returnKeyType="next"
         />
 
         {/* Sets (for strength training) */}
-        {editedWorkout.type === 'strength' && (
+        {editedWorkout.type === "strength" && (
           <>
             <Text style={styles.inputLabel}>Sets</Text>
             <TextInput
               style={styles.input}
               value={editedWorkout.sets}
-              onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, sets: text }))}
+              onChangeText={(text) =>
+                setEditedWorkout((prev) => ({ ...prev, sets: text }))
+              }
               placeholder="3"
               keyboardType="numeric"
               returnKeyType="next"
@@ -142,7 +152,9 @@ const EditWorkoutScreen = ({ navigation, route }) => {
             <TextInput
               style={styles.input}
               value={editedWorkout.reps}
-              onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, reps: text }))}
+              onChangeText={(text) =>
+                setEditedWorkout((prev) => ({ ...prev, reps: text }))
+              }
               placeholder="12"
               keyboardType="numeric"
               returnKeyType="next"
@@ -152,7 +164,9 @@ const EditWorkoutScreen = ({ navigation, route }) => {
             <TextInput
               style={styles.input}
               value={editedWorkout.weight}
-              onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, weight: text }))}
+              onChangeText={(text) =>
+                setEditedWorkout((prev) => ({ ...prev, weight: text }))
+              }
               placeholder="20"
               keyboardType="numeric"
               returnKeyType="next"
@@ -165,7 +179,9 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         <TextInput
           style={[styles.input, styles.notesInput]}
           value={editedWorkout.notes}
-          onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, notes: text }))}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, notes: text }))
+          }
           placeholder="How did it feel? Any observations..."
           multiline
           numberOfLines={4}
@@ -176,17 +192,19 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         <View style={styles.originalDateContainer}>
           <Text style={styles.originalDateLabel}>Original Date:</Text>
           <Text style={styles.originalDateValue}>
-            {workout.createdAt?.toDate 
-              ? new Date(workout.createdAt.toDate()).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })
-              : 'Unknown date'
-            }
+            {workout.createdAt?.toDate
+              ? new Date(workout.createdAt.toDate()).toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }
+                )
+              : "Unknown date"}
           </Text>
         </View>
 
@@ -194,8 +212,9 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         <View style={styles.warningContainer}>
           <Text style={styles.warningTitle}>Note</Text>
           <Text style={styles.warningText}>
-            Editing this workout will update the information but keep the original date. 
-            The changes will be reflected in your progress statistics.
+            Editing this workout will update the information but keep the
+            original date. The changes will be reflected in your progress
+            statistics.
           </Text>
         </View>
       </ScrollView>
@@ -206,31 +225,31 @@ const EditWorkoutScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   cancelButton: {
-    color: '#007AFF',
+    color: "#007AFF",
     fontSize: 16,
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   saveButton: {
-    color: '#007AFF',
+    color: "#007AFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   disabled: {
     opacity: 0.5,
@@ -244,26 +263,26 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 8,
     marginTop: 20,
   },
   input: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 8,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
   },
   notesInput: {
     height: 100,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   typeSelector: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 10,
   },
   typeButton: {
@@ -272,58 +291,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     marginRight: 10,
-    alignItems: 'center',
-    backgroundColor: 'white',
+    alignItems: "center",
+    backgroundColor: "white",
   },
   typeButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
   },
   typeButtonText: {
-    color: '#666',
+    color: "#666",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   typeButtonTextActive: {
-    color: 'white',
+    color: "white",
   },
   originalDateContainer: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 15,
     borderRadius: 8,
     marginTop: 20,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
   },
   originalDateLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+    fontWeight: "600",
+    color: "#666",
     marginBottom: 5,
   },
   originalDateValue: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   warningContainer: {
-    backgroundColor: '#FFF3CD',
+    backgroundColor: "#FFF3CD",
     padding: 15,
     borderRadius: 8,
     marginTop: 20,
     borderWidth: 1,
-    borderColor: '#FFEAA7',
+    borderColor: "#FFEAA7",
   },
   warningTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#856404',
+    fontWeight: "600",
+    color: "#856404",
     marginBottom: 8,
   },
   warningText: {
     fontSize: 14,
-    color: '#856404',
+    color: "#856404",
     lineHeight: 20,
   },
 });
