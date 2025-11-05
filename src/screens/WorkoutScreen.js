@@ -30,9 +30,10 @@ const WorkoutScreen = ({ navigation }) => {
     }, [])
   );
 
-  useEffect(() => {
+ useEffect(() => {
     fetchWorkouts();
-  }, []);
+  }, []);   
+  
 
   const fetchWorkouts = async () => {
     try {

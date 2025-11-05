@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -45,12 +45,12 @@ const HomeScreen = ({ navigation }) => {
 
   const fetchUserData = async () => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
       if (userDoc.exists()) {
         setUserData(userDoc.data());
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error("Error fetching user data:", error);
     }
   };
 
@@ -58,9 +58,9 @@ const HomeScreen = ({ navigation }) => {
     try {
       const today = new Date().toDateString();
       const workoutsQuery = query(
-        collection(db, 'workouts'),
-        where('userId', '==', auth.currentUser.uid),
-        where('date', '==', today)
+        collection(db, "workouts"),
+        where("userId", "==", auth.currentUser.uid),
+        where("date", "==", today)
       );
       const querySnapshot = await getDocs(workoutsQuery);
       let workoutCount = 0;
@@ -82,15 +82,15 @@ const HomeScreen = ({ navigation }) => {
         calories: estimatedCalories,
       });
     } catch (error) {
-      console.error('Error fetching today stats:', error);
+      console.error("Error fetching today stats:", error);
     }
   };
 
   const fetchRecentWorkouts = async () => {
     try {
       const workoutsQuery = query(
-        collection(db, 'workouts'),
-        where('userId', '==', auth.currentUser.uid)
+        collection(db, "workouts"),
+        where("userId", "==", auth.currentUser.uid)
       );
       const querySnapshot = await getDocs(workoutsQuery);
       let workoutList = querySnapshot.docs.map((doc) => ({
@@ -104,7 +104,7 @@ const HomeScreen = ({ navigation }) => {
       });
       setRecentWorkouts(workoutList.slice(0, 5));
     } catch (error) {
-      console.error('Error fetching recent workouts:', error);
+      console.error("Error fetching recent workouts:", error);
     }
   };
 
