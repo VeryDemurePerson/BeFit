@@ -1,5 +1,5 @@
-// src/screens/AddWorkoutScreen.js - Dynamic Exercise-Specific Form
-import React, { useState, useEffect } from "react";
+// src/screens/AddWorkoutScreen.js
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,140 +9,37 @@ import {
   ScrollView,
   TextInput,
   Alert,
-} from "react-native";
-import {
-  collection,
-  addDoc,
-  doc,
-  updateDoc,
-  increment,
-} from "firebase/firestore";
-import { auth, db } from "../services/firebase";
+} from 'react-native';
+import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
+import { auth, db } from '../services/firebase';
+import { useTheme } from './ThemeContext';
+import { lightTheme, darkTheme } from './themes';
 
 // Exercise database (unchanged)
 const EXERCISE_DATABASE = {
-  // Cardio exercises
-  running: {
-    type: "cardio",
-    fields: ["distance", "pace", "calories"],
-    units: { distance: "km", pace: "min/km", calories: "kcal" },
-  },
-  jogging: {
-    type: "cardio",
-    fields: ["distance", "pace", "calories"],
-    units: { distance: "km", pace: "min/km", calories: "kcal" },
-  },
-  cycling: {
-    type: "cardio",
-    fields: ["distance", "speed", "calories"],
-    units: { distance: "km", speed: "km/h", calories: "kcal" },
-  },
-  walking: {
-    type: "cardio",
-    fields: ["distance", "steps", "calories"],
-    units: { distance: "km", steps: "steps", calories: "kcal" },
-  },
-  swimming: {
-    type: "cardio",
-    fields: ["distance", "strokes", "calories"],
-    units: { distance: "m", strokes: "strokes", calories: "kcal" },
-  },
-  rowing: {
-    type: "cardio",
-    fields: ["distance", "strokes", "calories"],
-    units: { distance: "m", strokes: "strokes/min", calories: "kcal" },
-  },
-
-  // Strength exercises
-  "push-ups": {
-    type: "strength",
-    fields: ["sets", "reps", "weight"],
-    units: { sets: "sets", reps: "reps", weight: "kg" },
-  },
-  "push ups": {
-    type: "strength",
-    fields: ["sets", "reps", "weight"],
-    units: { sets: "sets", reps: "reps", weight: "kg" },
-  },
-  "pull-ups": {
-    type: "strength",
-    fields: ["sets", "reps", "weight"],
-    units: { sets: "sets", reps: "reps", weight: "kg" },
-  },
-  "pull ups": {
-    type: "strength",
-    fields: ["sets", "reps", "weight"],
-    units: { sets: "sets", reps: "reps", weight: "kg" },
-  },
-  squats: {
-    type: "strength",
-    fields: ["sets", "reps", "weight"],
-    units: { sets: "sets", reps: "reps", weight: "kg" },
-  },
-  deadlifts: {
-    type: "strength",
-    fields: ["sets", "reps", "weight"],
-    units: { sets: "sets", reps: "reps", weight: "kg" },
-  },
-  "bench press": {
-    type: "strength",
-    fields: ["sets", "reps", "weight"],
-    units: { sets: "sets", reps: "reps", weight: "kg" },
-  },
-  "bicep curls": {
-    type: "strength",
-    fields: ["sets", "reps", "weight"],
-    units: { sets: "sets", reps: "reps", weight: "kg" },
-  },
-  lunges: {
-    type: "strength",
-    fields: ["sets", "reps", "weight"],
-    units: { sets: "sets", reps: "reps", weight: "kg" },
-  },
-  planks: {
-    type: "strength",
-    fields: ["sets", "hold_time"],
-    units: { sets: "sets", hold_time: "seconds" },
-  },
-
-  // Flexibility exercises
-  yoga: {
-    type: "flexibility",
-    fields: ["poses", "difficulty"],
-    units: { poses: "poses", difficulty: "level (1-10)" },
-  },
-  stretching: {
-    type: "flexibility",
-    fields: ["muscle_groups", "hold_time"],
-    units: { muscle_groups: "groups", hold_time: "seconds" },
-  },
-  pilates: {
-    type: "flexibility",
-    fields: ["exercises", "difficulty"],
-    units: { exercises: "exercises", difficulty: "level (1-10)" },
-  },
-
-  // Sports
-  basketball: {
-    type: "sports",
-    fields: ["points", "rebounds", "calories"],
-    units: { points: "points", rebounds: "rebounds", calories: "kcal" },
-  },
-  tennis: {
-    type: "sports",
-    fields: ["sets_won", "games_won", "calories"],
-    units: { sets_won: "sets", games_won: "games", calories: "kcal" },
-  },
-  football: {
-    type: "sports",
-    fields: ["goals", "assists", "calories"],
-    units: { goals: "goals", assists: "assists", calories: "kcal" },
-  },
-  soccer: {
-    type: "sports",
-    fields: ["goals", "assists", "calories"],
-    units: { goals: "goals", assists: "assists", calories: "kcal" },
-  },
+  running: { type: 'cardio', fields: ['distance', 'pace', 'calories'], units: { distance: 'km', pace: 'min/km', calories: 'kcal' } },
+  jogging: { type: 'cardio', fields: ['distance', 'pace', 'calories'], units: { distance: 'km', pace: 'min/km', calories: 'kcal' } },
+  cycling: { type: 'cardio', fields: ['distance', 'speed', 'calories'], units: { distance: 'km', speed: 'km/h', calories: 'kcal' } },
+  walking: { type: 'cardio', fields: ['distance', 'steps', 'calories'], units: { distance: 'km', steps: 'steps', calories: 'kcal' } },
+  swimming: { type: 'cardio', fields: ['distance', 'strokes', 'calories'], units: { distance: 'm', strokes: 'strokes', calories: 'kcal' } },
+  rowing: { type: 'cardio', fields: ['distance', 'strokes', 'calories'], units: { distance: 'm', strokes: 'strokes/min', calories: 'kcal' } },
+  'push-ups': { type: 'strength', fields: ['sets', 'reps', 'weight'], units: { sets: 'sets', reps: 'reps', weight: 'kg' } },
+  'push ups': { type: 'strength', fields: ['sets', 'reps', 'weight'], units: { sets: 'sets', reps: 'reps', weight: 'kg' } },
+  'pull-ups': { type: 'strength', fields: ['sets', 'reps', 'weight'], units: { sets: 'sets', reps: 'reps', weight: 'kg' } },
+  'pull ups': { type: 'strength', fields: ['sets', 'reps', 'weight'], units: { sets: 'sets', reps: 'reps', weight: 'kg' } },
+  squats: { type: 'strength', fields: ['sets', 'reps', 'weight'], units: { sets: 'sets', reps: 'reps', weight: 'kg' } },
+  deadlifts: { type: 'strength', fields: ['sets', 'reps', 'weight'], units: { sets: 'sets', reps: 'reps', weight: 'kg' } },
+  'bench press': { type: 'strength', fields: ['sets', 'reps', 'weight'], units: { sets: 'sets', reps: 'reps', weight: 'kg' } },
+  'bicep curls': { type: 'strength', fields: ['sets', 'reps', 'weight'], units: { sets: 'sets', reps: 'reps', weight: 'kg' } },
+  lunges: { type: 'strength', fields: ['sets', 'reps', 'weight'], units: { sets: 'sets', reps: 'reps', weight: 'kg' } },
+  planks: { type: 'strength', fields: ['sets', 'hold_time'], units: { sets: 'sets', hold_time: 'seconds' } },
+  yoga: { type: 'flexibility', fields: ['poses', 'difficulty'], units: { poses: 'poses', difficulty: 'level (1-10)' } },
+  stretching: { type: 'flexibility', fields: ['muscle_groups', 'hold_time'], units: { muscle_groups: 'groups', hold_time: 'seconds' } },
+  pilates: { type: 'flexibility', fields: ['exercises', 'difficulty'], units: { exercises: 'exercises', difficulty: 'level (1-10)' } },
+  basketball: { type: 'sports', fields: ['points', 'rebounds', 'calories'], units: { points: 'points', rebounds: 'rebounds', calories: 'kcal' } },
+  tennis: { type: 'sports', fields: ['sets_won', 'games_won', 'calories'], units: { sets_won: 'sets', games_won: 'games', calories: 'kcal' } },
+  football: { type: 'sports', fields: ['goals', 'assists', 'calories'], units: { goals: 'goals', assists: 'assists', calories: 'kcal' } },
+  soccer: { type: 'sports', fields: ['goals', 'assists', 'calories'], units: { goals: 'goals', assists: 'assists', calories: 'kcal' } },
 };
 
 const AddWorkoutScreen = ({ navigation }) => {
@@ -150,10 +47,10 @@ const AddWorkoutScreen = ({ navigation }) => {
   const colors = theme === 'light' ? lightTheme : darkTheme;
 
   const [formData, setFormData] = useState({
-    exercise: "",
-    duration: "",
-    notes: "",
-    type: "general",
+    exercise: '',
+    duration: '',
+    notes: '',
+    type: 'general',
   });
   const [detectedExercise, setDetectedExercise] = useState(null);
   const [dynamicFields, setDynamicFields] = useState({});
@@ -163,77 +60,37 @@ const AddWorkoutScreen = ({ navigation }) => {
   useEffect(() => {
     if (formData.exercise.trim().length > 2) {
       const exerciseLower = formData.exercise.toLowerCase().trim();
-
-      // Find exact match first
       let match = EXERCISE_DATABASE[exerciseLower];
-
-      // If no exact match, try partial matching
       if (!match) {
-        const partialMatch = Object.keys(EXERCISE_DATABASE).find(
-          (key) => exerciseLower.includes(key) || key.includes(exerciseLower)
+        const partialMatch = Object.keys(EXERCISE_DATABASE).find((key) =>
+          exerciseLower.includes(key) || key.includes(exerciseLower)
         );
         if (partialMatch) match = EXERCISE_DATABASE[partialMatch];
       }
-
       if (match && match !== detectedExercise) {
         setDetectedExercise(match);
         setFormData((prev) => ({ ...prev, type: match.type }));
-        // Clear dynamic fields when exercise changes
         setDynamicFields({});
       } else if (!match && detectedExercise) {
         setDetectedExercise(null);
-        setFormData((prev) => ({ ...prev, type: "general" }));
+        setFormData((prev) => ({ ...prev, type: 'general' }));
         setDynamicFields({});
       }
     } else {
       setDetectedExercise(null);
-      setFormData((prev) => ({ ...prev, type: "general" }));
+      setFormData((prev) => ({ ...prev, type: 'general' }));
       setDynamicFields({});
     }
   }, [formData.exercise]);
 
-  const updateField = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const updateDynamicField = (field, value) => {
-    setDynamicFields((prev) => ({ ...prev, [field]: value }));
-  };
+  const updateField = (field, value) => setFormData((prev) => ({ ...prev, [field]: value }));
+  const updateDynamicField = (field, value) => setDynamicFields((prev) => ({ ...prev, [field]: value }));
 
   const validateForm = () => {
-    if (!formData.exercise.trim()) {
-      Alert.alert("Error", "Please enter an exercise name");
-      return false;
-    }
-
-    if (!formData.duration.trim()) {
-      Alert.alert("Error", "Please enter workout duration");
-      return false;
-    }
-
+    if (!formData.exercise.trim()) return Alert.alert('Error', 'Please enter an exercise name');
+    if (!formData.duration.trim()) return Alert.alert('Error', 'Please enter workout duration');
     const duration = parseInt(formData.duration);
-    if (isNaN(duration) || duration <= 0) {
-      Alert.alert("Error", "Please enter a valid duration in minutes");
-      return false;
-    }
-
-    // Validate dynamic fields
-    if (detectedExercise) {
-      for (const field of detectedExercise.fields) {
-        const value = dynamicFields[field];
-        if (value && value.trim()) {
-          const numValue = parseFloat(value);
-          if (isNaN(numValue) || numValue < 0) {
-            Alert.alert(
-              "Error",
-              `Please enter a valid ${field.replace("_", " ")}`
-            );
-            return false;
-          }
-        }
-      }
-    }
-
+    if (isNaN(duration) || duration <= 0) return Alert.alert('Error', 'Please enter a valid duration');
     return true;
   };
 
@@ -260,23 +117,12 @@ const AddWorkoutScreen = ({ navigation }) => {
         date: new Date().toDateString(),
       };
 
-      const docRef = await addDoc(collection(db, "workouts"), workoutData);
+      await addDoc(collection(db, 'workouts'), workoutData);
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), { totalWorkouts: increment(1) });
 
-      // Update user's total workout count
-      const userRef = doc(db, "users", auth.currentUser.uid);
-      await updateDoc(userRef, {
-        totalWorkouts: increment(1),
-      });
-
-      Alert.alert("Success", "Workout logged successfully!", [
-        {
-          text: "OK",
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      Alert.alert('Success', 'Workout logged successfully!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
     } catch (error) {
-      console.error("Error saving workout:", error);
-      Alert.alert("Error", `Failed to log workout: ${error.message}`);
+      Alert.alert('Error', `Failed to log workout: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -294,25 +140,22 @@ const AddWorkoutScreen = ({ navigation }) => {
         <Text style={[styles.detectedExerciseText, { color: colors.accent }]}>
           Detected: {formData.exercise} ({detectedExercise.type})
         </Text>
-
         {detectedExercise.fields.map((field) => (
           <View key={field} style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>
-              {field.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-              {detectedExercise.units[field] &&
-                ` (${detectedExercise.units[field]})`}
+            <Text style={[styles.inputLabel, { color: colors.text }]}>
+              {field.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}{' '}
+              {detectedExercise.units[field] && `(${detectedExercise.units[field]})`}
             </Text>
             <TextInput
-              style={styles.input}
-              value={dynamicFields[field] || ""}
+              style={[
+                styles.input,
+                { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
+              ]}
+              value={dynamicFields[field] || ''}
               onChangeText={(value) => updateDynamicField(field, value)}
-              placeholder={`Enter ${field.replace("_", " ")}`}
-              keyboardType={
-                field.includes("time") || field.includes("difficulty")
-                  ? "numeric"
-                  : "numeric"
-              }
-              returnKeyType="next"
+              placeholder={`Enter ${field.replace('_', ' ')}`}
+              placeholderTextColor={colors.subtext}
+              keyboardType="numeric"
             />
           </View>
         ))}
@@ -322,7 +165,6 @@ const AddWorkoutScreen = ({ navigation }) => {
 
   const renderExerciseSuggestions = () => {
     if (formData.exercise.length < 2) return null;
-
     const suggestions = Object.keys(EXERCISE_DATABASE)
       .filter(
         (exercise) =>
@@ -339,11 +181,14 @@ const AddWorkoutScreen = ({ navigation }) => {
           {suggestions.map((suggestion) => (
             <TouchableOpacity
               key={suggestion}
-              style={styles.suggestionChip}
-              onPress={() => updateField("exercise", suggestion)}
+              style={[
+                styles.suggestionChip,
+                { backgroundColor: colors.card, borderColor: colors.accent },
+              ]}
+              onPress={() => updateField('exercise', suggestion)}
             >
-              <Text style={styles.suggestionText}>{suggestion}</Text>
-              <Text style={styles.suggestionType}>
+              <Text style={[styles.suggestionText, { color: colors.accent }]}>{suggestion}</Text>
+              <Text style={[styles.suggestionType, { color: colors.subtext }]}>
                 ({EXERCISE_DATABASE[suggestion].type})
               </Text>
             </TouchableOpacity>
@@ -367,17 +212,19 @@ const AddWorkoutScreen = ({ navigation }) => {
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Add Workout</Text>
         <TouchableOpacity onPress={saveWorkout} disabled={loading}>
-          <Text style={[styles.saveButton, loading && styles.disabled]}>
-            {loading ? "Saving..." : "Save"}
+          <Text
+            style={[
+              styles.saveButton,
+              { color: colors.accent, opacity: loading ? 0.5 : 1 },
+            ]}
+          >
+            {loading ? 'Saving...' : 'Save'}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {/* Exercise Name */}
         <View style={styles.inputContainer}>
           <Text style={[styles.inputLabel, { color: colors.text }]}>Exercise Name *</Text>
@@ -387,7 +234,7 @@ const AddWorkoutScreen = ({ navigation }) => {
               { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
             ]}
             value={formData.exercise}
-            onChangeText={(text) => updateField("exercise", text)}
+            onChangeText={(text) => updateField('exercise', text)}
             placeholder="e.g., Running, Push-ups, Yoga"
             placeholderTextColor={colors.subtext}
           />
@@ -404,7 +251,7 @@ const AddWorkoutScreen = ({ navigation }) => {
               { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
             ]}
             value={formData.duration}
-            onChangeText={(text) => updateField("duration", text)}
+            onChangeText={(text) => updateField('duration', text)}
             placeholder="30"
             placeholderTextColor={colors.subtext}
             keyboardType="numeric"
@@ -423,19 +270,39 @@ const AddWorkoutScreen = ({ navigation }) => {
               { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
             ]}
             value={formData.notes}
-            onChangeText={(text) => updateField("notes", text)}
-            placeholder="How did it feel? Any observations..."
+            onChangeText={(text) => updateField('notes', text)}
+            placeholder="How did it feel?"
+            placeholderTextColor={colors.subtext}
             multiline
           />
         </View>
 
-        {/* Info Section */}
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoTitle}>Smart Form Detection</Text>
-          <Text style={styles.infoText}>
-            Type an exercise name and the form will automatically show relevant
-            fields. Supported: Running, Cycling, Push-ups, Squats, Yoga, and
-            many more!
+        {/* Info Section (same yellow style as Edit screen) */}
+        <View
+          style={[
+            styles.infoContainer,
+            {
+              backgroundColor: theme === 'light' ? '#FFF3CD' : '#403418',
+              borderColor: theme === 'light' ? '#FFEAA7' : '#66522b',
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.infoTitle,
+              { color: theme === 'light' ? '#856404' : '#ffcd6a' },
+            ]}
+          >
+            Smart Form Detection
+          </Text>
+          <Text
+            style={[
+              styles.infoText,
+              { color: theme === 'light' ? '#856404' : '#ffcd6a' },
+            ]}
+          >
+            Type an exercise name and the form will automatically show relevant fields.
+            Supported: Running, Cycling, Push-ups, Squats, Yoga, and many more!
           </Text>
         </View>
       </ScrollView>
@@ -444,52 +311,14 @@ const AddWorkoutScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
+  container: { flex: 1 },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  cancelButton: {
-    color: "#007AFF",
-    fontSize: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  saveButton: {
-    color: "#007AFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
   },
   cancelButton: { fontSize: 16 },
   title: { fontSize: 18, fontWeight: 'bold' },
@@ -499,85 +328,30 @@ const styles = StyleSheet.create({
   inputContainer: { marginBottom: 20 },
   inputLabel: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
   input: {
-    backgroundColor: "white",
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 8,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  notesInput: {
-    height: 100,
-    textAlignVertical: "top",
-  },
-  suggestionsContainer: {
-    marginBottom: 20,
-  },
-  suggestionsTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#666",
-    marginBottom: 10,
-  },
-  suggestionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
   },
   notesInput: { height: 100, textAlignVertical: 'top' },
   suggestionsContainer: { marginBottom: 20 },
   suggestionsTitle: { fontSize: 14, fontWeight: '600', marginBottom: 10 },
   suggestionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   suggestionChip: {
-    backgroundColor: "white",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#007AFF",
     marginBottom: 5,
   },
-  suggestionText: {
-    fontSize: 14,
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  suggestionType: {
-    fontSize: 11,
-    color: "#666",
-    marginTop: 2,
-  },
-  dynamicFieldsContainer: {
-    backgroundColor: "#E8F4FD",
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  detectedExerciseText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1976D2",
-    marginBottom: 15,
-    textAlign: "center",
-  },
-  infoContainer: {
-    backgroundColor: "#F0F8FF",
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1976D2",
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 14,
-    color: "#1976D2",
-    lineHeight: 20,
-  },
+  suggestionText: { fontSize: 14, fontWeight: '600' },
+  suggestionType: { fontSize: 11, marginTop: 2 },
+  dynamicFieldsContainer: { padding: 15, borderRadius: 8, marginBottom: 20, borderWidth: 1 },
+  detectedExerciseText: { fontSize: 14, fontWeight: '600', marginBottom: 15, textAlign: 'center' },
+  infoContainer: { padding: 15, borderRadius: 8, marginTop: 10, borderWidth: 1 },
+  infoTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  infoText: { fontSize: 14, lineHeight: 20 },
 });
 
 export default AddWorkoutScreen;
