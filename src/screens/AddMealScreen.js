@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +12,8 @@ import {
 } from 'react-native';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
-import { searchFoods } from '../services/foodApi';
+import { useTheme } from './ThemeContext';
+import { lightTheme, darkTheme } from './themes';
 
 const AddMealScreen = ({ navigation, route }) => {
   const { mealType = 'Breakfast' } = route.params || {};
@@ -85,66 +87,57 @@ const AddMealScreen = ({ navigation, route }) => {
   }, []);
 
   const saveMeal = async () => {
-    const validFoods = foods.filter(food => food.name.trim() && food.calories);
-    if (validFoods.length === 0) return Alert.alert('Error', 'Please add at least one food item with calories');
+    const validFoods = foods.filter(f => f.name.trim() && f.calories);
+    if (!validFoods.length) return Alert.alert('Error', 'Please add at least one food item with calories');
 
     for (let food of validFoods) {
-      if (isNaN(food.calories) || parseInt(food.calories) < 0) {
-        return Alert.alert('Error', `Please enter a valid calorie value for ${food.name}`);
-      }
+      if (isNaN(food.calories) || parseInt(food.calories) < 0)
+        return Alert.alert('Error', `Invalid calorie value for ${food.name}`);
     }
 
     setLoading(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      const nutritionDocRef = doc(db, 'nutrition', `${auth.currentUser.uid}_${today}`);
-      const nutritionDoc = await getDoc(nutritionDocRef);
-      const existingData = nutritionDoc.exists() ? nutritionDoc.data() : {
-        meals: [],
-        totalCalories: 0,
-        nutrients: { protein: 0, carbs: 0, fat: 0, fiber: 0 }
-      };
+      const ref = doc(db, 'nutrition', `${auth.currentUser.uid}_${today}`);
+      const docSnap = await getDoc(ref);
+      const existing = docSnap.exists()
+        ? docSnap.data()
+        : { meals: [], totalCalories: 0, nutrients: { protein: 0, carbs: 0, fat: 0, fiber: 0 } };
 
       const mealCalories = validFoods.reduce((sum, f) => sum + parseInt(f.calories), 0);
-      const mealProtein = validFoods.reduce((sum, f) => sum + (f.protein || 0), 0);
-      const mealCarbs = validFoods.reduce((sum, f) => sum + (f.carbs || 0), 0);
-      const mealFat = validFoods.reduce((sum, f) => sum + (f.fat || 0), 0);
+      const est = {
+        protein: Math.round(mealCalories * 0.15 / 4),
+        carbs: Math.round(mealCalories * 0.5 / 4),
+        fat: Math.round(mealCalories * 0.35 / 9),
+        fiber: Math.round(mealCalories * 0.02),
+      };
 
       const newMeal = {
         type: mealType,
         time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        foods: validFoods.map(f => ({
-          name: f.name.trim(),
-          calories: parseInt(f.calories),
-          protein: f.protein,
-          carbs: f.carbs,
-          fat: f.fat
-        })),
-        calories: mealCalories
+        foods: validFoods.map(f => ({ name: f.name.trim(), calories: parseInt(f.calories) })),
+        calories: mealCalories,
       };
 
-      const updatedData = {
-        meals: [...existingData.meals, newMeal],
-        totalCalories: existingData.totalCalories + mealCalories,
+      const updated = {
+        meals: [...existing.meals, newMeal],
+        totalCalories: existing.totalCalories + mealCalories,
         nutrients: {
-          protein: existingData.nutrients.protein + mealProtein,
-          carbs: existingData.nutrients.carbs + mealCarbs,
-          fat: existingData.nutrients.fat + mealFat,
-          fiber: existingData.nutrients.fiber
+          protein: existing.nutrients.protein + est.protein,
+          carbs: existing.nutrients.carbs + est.carbs,
+          fat: existing.nutrients.fat + est.fat,
+          fiber: existing.nutrients.fiber + est.fiber,
         },
         date: today,
         userId: auth.currentUser.uid,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
-      await setDoc(nutritionDocRef, updatedData);
-
-      Alert.alert('Success', 'Meal logged successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
-    } catch (error) {
-      console.error('Error saving meal:', error);
-      Alert.alert('Error', `Failed to save meal: ${error.message}`);
+      await setDoc(ref, updated);
+      Alert.alert('Success', 'Meal logged successfully!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    } catch (err) {
+      console.error('Error saving meal:', err);
+      Alert.alert('Error', `Failed to save meal: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -329,39 +322,46 @@ const AddMealScreen = ({ navigation, route }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
+          <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Add {mealType}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Add {mealType}</Text>
         <TouchableOpacity onPress={saveMeal} disabled={loading}>
-          <Text style={[styles.saveButton, loading && styles.disabled]}>
+          <Text style={[styles.saveButton, { color: colors.accent, opacity: loading ? 0.5 : 1 }]}>
             {loading ? 'Saving...' : 'Save'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.mealTypeContainer}>
-        <Text style={styles.mealTypeTitle}>Meal Type</Text>
-        <View style={styles.mealTypeSelector}>
-          {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((type) => (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.mealTypeButton,
-                mealType === type && styles.mealTypeButtonActive
-              ]}
-              onPress={() => navigation.setParams({ mealType: type })}
-            >
-              <Text style={[
-                styles.mealTypeButtonText,
-                mealType === type && styles.mealTypeButtonTextActive
-              ]}>
-                {type}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.mealTypeContainer}>
+          <Text style={[styles.mealTypeTitle, { color: colors.text }]}>Meal Type</Text>
+          <View style={styles.mealTypeSelector}>
+            {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={[
+                  styles.mealTypeButton,
+                  {
+                    backgroundColor: mealType === type ? colors.accent : colors.card,
+                    borderColor: mealType === type ? colors.accent : colors.border,
+                  },
+                ]}
+                onPress={() => navigation.setParams({ mealType: type })}
+              >
+                <Text
+                  style={[
+                    styles.mealTypeButtonText,
+                    { color: mealType === type ? '#fff' : colors.text },
+                  ]}
+                >
+                  {type}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </View>
 
@@ -369,17 +369,29 @@ const AddMealScreen = ({ navigation, route }) => {
         <FoodInput key={food.id} food={food} />
       ))}
 
-      <TouchableOpacity style={styles.addFoodButton} onPress={addFoodField}>
-        <Text style={styles.addFoodButtonText}>+ Add Another Food</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.addFoodButton, { borderColor: colors.accent, backgroundColor: colors.card }]}
+          onPress={addFoodField}
+        >
+          <Text style={[styles.addFoodButtonText, { color: colors.accent }]}>+ Add Another Food</Text>
+        </TouchableOpacity>
 
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalLabel}>Total Calories:</Text>
-        <Text style={styles.totalValue}>
-          {foods.reduce((sum, food) => sum + (parseInt(food.calories) || 0), 0)} cal
-        </Text>
-      </View>
-    </ScrollView>
+        <View style={[styles.totalContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.totalLabel, { color: colors.text }]}>Total Calories:</Text>
+          <Text style={[styles.totalValue, { color: colors.accent }]}>
+            {foods.reduce((sum, f) => sum + (parseInt(f.calories) || 0), 0)} cal
+          </Text>
+        </View>
+
+        <View style={[styles.reminderContainer, { backgroundColor: theme === 'light' ? '#E8F5E8' : '#1B3720' }]}>
+          <Text style={[styles.reminderTitle, { color: '#4CAF50' }]}>Remember</Text>
+          <Text style={[styles.reminderText, { color: '#4CAF50' }]}>
+            Focus on nourishing your body with whole foods. This tracker helps you understand your eating patterns,
+            not restrict your intake. Listen to your body's hunger and fullness cues.
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -397,6 +409,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 15,
+    borderBottomWidth: 1,
   },
   cancelButton: {
     color: '#007AFF',
@@ -491,10 +504,6 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#f0f8ff',
-    borderRadius: 8,
-    marginBottom: 10,
   },
   loadingText: {
     marginLeft: 10,
@@ -582,18 +591,8 @@ const styles = StyleSheet.create({
   macrosContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 5,
-  },
-  macroInput: {
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  smallInput: {
-    backgroundColor: '#f8f8f8',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderRadius: 8,
-    fontSize: 14,
+    alignItems: 'center',
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     textAlign: 'center',
@@ -632,6 +631,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#007AFF',
   },
+  totalLabel: { fontSize: 18, fontWeight: '600' },
+  totalValue: { fontSize: 24, fontWeight: 'bold' },
+  reminderContainer: { padding: 20, borderRadius: 12 },
+  reminderTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10 },
+  reminderText: { fontSize: 14, lineHeight: 20 },
 });
 
 export default AddMealScreen;

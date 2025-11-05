@@ -1,3 +1,4 @@
+// src/screens/EditWorkoutScreen.js
 import React, { useState } from 'react';
 import {
   View,
@@ -11,10 +12,14 @@ import {
 } from 'react-native';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import { useTheme } from './ThemeContext';
+import { lightTheme, darkTheme } from './themes';
 
 const EditWorkoutScreen = ({ navigation, route }) => {
   const { workout } = route.params;
-  
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
+
   const [editedWorkout, setEditedWorkout] = useState({
     exercise: workout.exercise || '',
     duration: workout.duration?.toString() || '',
@@ -22,7 +27,7 @@ const EditWorkoutScreen = ({ navigation, route }) => {
     reps: workout.reps?.toString() || '',
     weight: workout.weight?.toString() || '',
     notes: workout.notes || '',
-    type: workout.type || 'strength'
+    type: workout.type || 'strength',
   });
   const [loading, setLoading] = useState(false);
 
@@ -42,19 +47,14 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         weight: editedWorkout.weight ? parseFloat(editedWorkout.weight) : null,
         notes: editedWorkout.notes,
         type: editedWorkout.type,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       await updateDoc(doc(db, 'workouts', workout.id), workoutData);
-
       Alert.alert('Success', 'Workout updated successfully!', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack()
-        }
+        { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
-      console.error('Error updating workout:', error);
       Alert.alert('Error', `Failed to update workout: ${error.message}`);
     } finally {
       setLoading(false);
@@ -62,140 +62,243 @@ const EditWorkoutScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
+          <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Edit Workout</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Edit Workout</Text>
         <TouchableOpacity onPress={updateWorkout} disabled={loading}>
-          <Text style={[styles.saveButton, loading && styles.disabled]}>
+          <Text
+            style={[
+              styles.saveButton,
+              { color: colors.accent, opacity: loading ? 0.5 : 1 },
+            ]}
+          >
             {loading ? 'Saving...' : 'Save'}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Workout Type Selector */}
-        <Text style={styles.inputLabel}>Workout Type</Text>
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Workout Type</Text>
         <View style={styles.typeSelector}>
           {['strength', 'cardio', 'flexibility'].map((type) => (
             <TouchableOpacity
               key={type}
               style={[
                 styles.typeButton,
-                editedWorkout.type === type && styles.typeButtonActive
+                {
+                  backgroundColor:
+                    editedWorkout.type === type ? colors.accent : colors.card,
+                  borderColor:
+                    editedWorkout.type === type ? colors.accent : colors.border,
+                },
               ]}
-              onPress={() => setEditedWorkout(prev => ({ ...prev, type }))}
+              onPress={() => setEditedWorkout((prev) => ({ ...prev, type }))}
             >
-              <Text style={[
-                styles.typeButtonText,
-                editedWorkout.type === type && styles.typeButtonTextActive
-              ]}>
-                {type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Unknown'}
+              <Text
+                style={[
+                  styles.typeButtonText,
+                  {
+                    color:
+                      editedWorkout.type === type
+                        ? colors.inverseText
+                        : colors.text,
+                  },
+                ]}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Exercise Name */}
-        <Text style={styles.inputLabel}>Exercise Name *</Text>
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Exercise Name *</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
           value={editedWorkout.exercise}
-          onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, exercise: text }))}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, exercise: text }))
+          }
           placeholder="e.g., Push-ups, Running, Yoga"
-          returnKeyType="next"
+          placeholderTextColor={colors.subtext}
         />
 
         {/* Duration */}
-        <Text style={styles.inputLabel}>Duration (minutes) *</Text>
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Duration (minutes) *</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
           value={editedWorkout.duration}
-          onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, duration: text }))}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, duration: text }))
+          }
           placeholder="30"
+          placeholderTextColor={colors.subtext}
           keyboardType="numeric"
-          returnKeyType="next"
         />
 
-        {/* Sets (for strength training) */}
+        {/* Strength Fields */}
         {editedWorkout.type === 'strength' && (
           <>
-            <Text style={styles.inputLabel}>Sets</Text>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Sets</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
               value={editedWorkout.sets}
-              onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, sets: text }))}
+              onChangeText={(text) =>
+                setEditedWorkout((prev) => ({ ...prev, sets: text }))
+              }
               placeholder="3"
+              placeholderTextColor={colors.subtext}
               keyboardType="numeric"
-              returnKeyType="next"
             />
 
-            <Text style={styles.inputLabel}>Reps</Text>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Reps</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
               value={editedWorkout.reps}
-              onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, reps: text }))}
+              onChangeText={(text) =>
+                setEditedWorkout((prev) => ({ ...prev, reps: text }))
+              }
               placeholder="12"
+              placeholderTextColor={colors.subtext}
               keyboardType="numeric"
-              returnKeyType="next"
             />
 
-            <Text style={styles.inputLabel}>Weight (kg)</Text>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Weight (kg)</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
               value={editedWorkout.weight}
-              onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, weight: text }))}
+              onChangeText={(text) =>
+                setEditedWorkout((prev) => ({ ...prev, weight: text }))
+              }
               placeholder="20"
+              placeholderTextColor={colors.subtext}
               keyboardType="numeric"
-              returnKeyType="next"
             />
           </>
         )}
 
         {/* Notes */}
-        <Text style={styles.inputLabel}>Notes</Text>
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Notes</Text>
         <TextInput
-          style={[styles.input, styles.notesInput]}
+          style={[
+            styles.input,
+            styles.notesInput,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
           value={editedWorkout.notes}
-          onChangeText={(text) => setEditedWorkout(prev => ({ ...prev, notes: text }))}
-          placeholder="How did it feel? Any observations..."
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, notes: text }))
+          }
+          placeholder="How did it feel?"
+          placeholderTextColor={colors.subtext}
           multiline
-          numberOfLines={4}
-          returnKeyType="done"
         />
 
-        {/* Original Date Display */}
-        <View style={styles.originalDateContainer}>
-          <Text style={styles.originalDateLabel}>Original Date:</Text>
-          <Text style={styles.originalDateValue}>
-            {workout.createdAt?.toDate 
+        {/* Original Date */}
+        <View
+          style={[
+            styles.originalDateContainer,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.originalDateLabel, { color: colors.subtext }]}>
+            Original Date:
+          </Text>
+          <Text style={[styles.originalDateValue, { color: colors.text }]}>
+            {workout.createdAt?.toDate
               ? new Date(workout.createdAt.toDate()).toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
                   hour: '2-digit',
-                  minute: '2-digit'
+                  minute: '2-digit',
                 })
-              : 'Unknown date'
-            }
+              : 'Unknown date'}
           </Text>
         </View>
 
         {/* Warning */}
-        <View style={styles.warningContainer}>
-          <Text style={styles.warningTitle}>Note</Text>
-          <Text style={styles.warningText}>
-            Editing this workout will update the information but keep the original date. 
-            The changes will be reflected in your progress statistics.
+        <View
+          style={[
+            styles.warningContainer,
+            {
+              backgroundColor:
+                theme === 'light' ? '#FFF3CD' : '#403418',
+              borderColor: theme === 'light' ? '#FFEAA7' : '#66522b',
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.warningTitle,
+              { color: theme === 'light' ? '#856404' : '#ffcd6a' },
+            ]}
+          >
+            Note
+          </Text>
+          <Text
+            style={[
+              styles.warningText,
+              { color: theme === 'light' ? '#856404' : '#ffcd6a' },
+            ]}
+          >
+            Editing this workout will update the information but keep the original
+            date. The changes will be reflected in your progress statistics.
           </Text>
         </View>
       </ScrollView>
@@ -204,128 +307,45 @@ const EditWorkoutScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
-  cancelButton: {
-    color: '#007AFF',
-    fontSize: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  saveButton: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-    marginTop: 20,
-  },
+  cancelButton: { fontSize: 16 },
+  title: { fontSize: 18, fontWeight: 'bold' },
+  saveButton: { fontSize: 16, fontWeight: '600' },
+  content: { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  inputLabel: { fontSize: 16, fontWeight: '600', marginBottom: 8, marginTop: 20 },
   input: {
-    backgroundColor: 'white',
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 8,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
   },
-  notesInput: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  typeSelector: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
+  notesInput: { height: 100, textAlignVertical: 'top' },
+  typeSelector: { flexDirection: 'row', marginBottom: 10 },
   typeButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
     marginRight: 10,
     alignItems: 'center',
-    backgroundColor: 'white',
   },
-  typeButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  typeButtonText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  typeButtonTextActive: {
-    color: 'white',
-  },
-  originalDateContainer: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  originalDateLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 5,
-  },
-  originalDateValue: {
-    fontSize: 16,
-    color: '#333',
-  },
-  warningContainer: {
-    backgroundColor: '#FFF3CD',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#FFEAA7',
-  },
-  warningTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#856404',
-    marginBottom: 8,
-  },
-  warningText: {
-    fontSize: 14,
-    color: '#856404',
-    lineHeight: 20,
-  },
+  typeButtonText: { fontSize: 14, fontWeight: '600' },
+  originalDateContainer: { padding: 15, borderRadius: 8, marginTop: 20, borderWidth: 1 },
+  originalDateLabel: { fontSize: 14, fontWeight: '600', marginBottom: 5 },
+  originalDateValue: { fontSize: 16 },
+  warningContainer: { padding: 15, borderRadius: 8, marginTop: 20, borderWidth: 1 },
+  warningTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  warningText: { fontSize: 14, lineHeight: 20 },
 });
 
 export default EditWorkoutScreen;
