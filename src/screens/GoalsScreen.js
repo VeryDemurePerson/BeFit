@@ -27,6 +27,9 @@ import { auth, db } from "../services/firebase";
 import { useFocusEffect } from "@react-navigation/native";
 
 const GoalsScreen = ({ navigation }) => {
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
+
   const [goals, setGoals] = useState({
     weeklyWorkouts: 3,
     weeklyDuration: 150,
@@ -81,7 +84,6 @@ const GoalsScreen = ({ navigation }) => {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const today = new Date().toISOString().split("T")[0];
 
-      // Fetch workouts
       let workouts = [];
       try {
         const workoutsQuery = query(
@@ -114,7 +116,6 @@ const GoalsScreen = ({ navigation }) => {
         return date >= monthStart;
       });
 
-      // Daily water
       let dailyWaterCount = 0;
       try {
         const waterDoc = await getDoc(
@@ -171,7 +172,7 @@ const GoalsScreen = ({ navigation }) => {
     }
   };
 
-  const getGoalTitle = (goalType) => {
+  const getGoalTitle = goalType => {
     switch (goalType) {
       case "weeklyWorkouts":
         return "Weekly Workouts";
@@ -213,10 +214,17 @@ const GoalsScreen = ({ navigation }) => {
     const isCompleted = percentage >= 100;
     const current = progress[goalType];
     const target = goals[goalType];
+
     return (
-      <View style={[styles.goalCard, isCompleted && styles.completedGoal]}>
+      <View
+        style={[
+          styles.goalCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+          isCompleted && { borderWidth: 2, borderColor: '#4CAF50' },
+        ]}
+      >
         <View style={styles.goalHeader}>
-          <View style={styles.goalIcon}>{getGoalIcon(goalType)}</View>
+          <Text style={[styles.goalIcon, { color: colors.text }]}>{getGoalIcon(goalType)}</Text>
           <View style={styles.goalInfo}>
             <Text style={styles.goalTitle}>{getGoalTitle(goalType)}</Text>
             <Text style={styles.goalProgress}>
@@ -233,7 +241,7 @@ const GoalsScreen = ({ navigation }) => {
               {percentage}%
             </Text>
             <TouchableOpacity
-              style={styles.modifyButton}
+              style={[styles.modifyButton, { backgroundColor: colors.accent }]}
               onPress={() =>
                 navigation.navigate("EditGoal", {
                   goalType: goalType,
@@ -245,17 +253,23 @@ const GoalsScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-        <View style={styles.progressBarContainer}>
+        <View
+          style={[
+            styles.progressBarContainer,
+            { backgroundColor: colors.border },
+          ]}
+        >
           <View
             style={[
               styles.progressBar,
-              { width: `${percentage}%` },
-              isCompleted && styles.completedProgressBar,
+              { width: `${percentage}%`, backgroundColor: isCompleted ? '#4CAF50' : colors.accent },
             ]}
           />
         </View>
         {isCompleted && (
-          <Text style={styles.completedMessage}>🎉 Goal Completed!</Text>
+          <Text style={[styles.completedMessage, { color: '#4CAF50' }]}>
+            🎉 Goal Completed!
+          </Text>
         )}
       </View>
     );
@@ -263,7 +277,7 @@ const GoalsScreen = ({ navigation }) => {
 
   const QuickActions = () => (
     <View style={styles.quickActionsContainer}>
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
       <View style={styles.actionsGrid}>
         <TouchableOpacity
           style={styles.actionButton}
@@ -272,12 +286,12 @@ const GoalsScreen = ({ navigation }) => {
           }
         >
           <Text style={styles.actionIcon}>💪</Text>
-          <Text style={styles.actionText}>Add Workout</Text>
+          <Text style={[styles.actionText, { color: colors.text }]}>Add Workout</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton} onPress={addWaterGlass}>
           <Text style={styles.actionIcon}>💧</Text>
-          <Text style={styles.actionText}>Drink Water</Text>
+          <Text style={[styles.actionText, { color: colors.text }]}>Drink Water</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -285,7 +299,7 @@ const GoalsScreen = ({ navigation }) => {
           onPress={() => navigation.navigate("Progress")}
         >
           <Text style={styles.actionIcon}>📊</Text>
-          <Text style={styles.actionText}>View Progress</Text>
+          <Text style={[styles.actionText, { color: colors.text }]}>View Progress</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -293,19 +307,25 @@ const GoalsScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <Text>Loading goals...</Text>
+          <Text style={{ color: colors.text }}>Loading goals...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Goals</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.title, { color: colors.text }]}>Goals</Text>
       </View>
+
       <ScrollView style={styles.content}>
         <View style={styles.goalsContainer}>
           <Text style={styles.sectionTitle}>Your Fitness Goals</Text>
@@ -314,7 +334,12 @@ const GoalsScreen = ({ navigation }) => {
           ))}
         </View>
         <QuickActions />
-        <View style={styles.motivationContainer}>
+        <View
+          style={[
+            styles.motivationContainer,
+            { backgroundColor: '#007AFF' },
+          ]}
+        >
           <Text style={styles.motivationTitle}>Stay Motivated</Text>
           <Text style={styles.motivationText}>
             "Setting goals is the first step in turning the invisible into the
@@ -361,6 +386,10 @@ const styles = StyleSheet.create({
   goalsContainer: {
     padding: 20,
   },
+  title: { fontSize: 24, fontWeight: 'bold' },
+  content: { flex: 1 },
+  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 15 },
+  goalsContainer: { padding: 20 },
   goalCard: {
     backgroundColor: "white",
     padding: 20,
@@ -479,6 +508,8 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlign: "center",
   },
+  actionIcon: { fontSize: 24, marginBottom: 8 },
+  actionText: { fontSize: 12, fontWeight: '600', textAlign: 'center' },
   motivationContainer: {
     backgroundColor: "#007AFF",
     margin: 20,

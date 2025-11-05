@@ -14,6 +14,9 @@ import { auth, db } from "../services/firebase";
 import { useFocusEffect } from "@react-navigation/native";
 
 const NutritionScreen = ({ navigation }) => {
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
+
   const [todayNutrition, setTodayNutrition] = useState({
     meals: [],
     totalCalories: 0,
@@ -123,7 +126,7 @@ const NutritionScreen = ({ navigation }) => {
     const percentage = Math.min((current / target) * 100, 100);
 
     return (
-      <View style={styles.nutrientCard}>
+      <View style={[styles.nutrientCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.nutrientHeader}>
           <Text style={styles.nutrientTitle}>{title}</Text>
           <Text style={styles.nutrientValues}>
@@ -147,23 +150,23 @@ const NutritionScreen = ({ navigation }) => {
   };
 
   const MealCard = ({ meal }) => (
-    <View style={styles.mealCard}>
+    <View style={[styles.mealCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.mealHeader}>
-        <Text style={styles.mealType}>{meal.type}</Text>
-        <Text style={styles.mealTime}>{meal.time}</Text>
+        <Text style={[styles.mealType, { color: colors.text }]}>{meal.type}</Text>
+        <Text style={[styles.mealTime, { color: colors.subtext }]}>{meal.time}</Text>
       </View>
       {meal.foods.map((food, index) => (
         <View key={index} style={styles.foodItem}>
-          <Text style={styles.foodName}>{food.name}</Text>
-          <Text style={styles.foodCalories}>{food.calories} cal</Text>
+          <Text style={[styles.foodName, { color: colors.text }]}>{food.name}</Text>
+          <Text style={[styles.foodCalories, { color: colors.subtext }]}>{food.calories} cal</Text>
         </View>
       ))}
     </View>
   );
 
   const WeeklyChart = () => (
-    <View style={styles.chartContainer}>
-      <Text style={styles.chartTitle}>Weekly Calorie Intake</Text>
+    <View style={[styles.chartContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.chartTitle, { color: colors.text }]}>Weekly Calorie Intake</Text>
       <View style={styles.barsContainer}>
         {weeklyHistory.map((day, index) => (
           <View key={index} style={styles.barContainer}>
@@ -184,8 +187,8 @@ const NutritionScreen = ({ navigation }) => {
                 ]}
               />
             </View>
-            <Text style={styles.barLabel}>{day.dayName}</Text>
-            <Text style={styles.barValue}>{day.calories}</Text>
+            <Text style={[styles.barLabel, { color: colors.subtext }]}>{day.dayName}</Text>
+            <Text style={[styles.barValue, { color: colors.text }]}>{day.calories}</Text>
           </View>
         ))}
       </View>
@@ -194,7 +197,7 @@ const NutritionScreen = ({ navigation }) => {
 
   const QuickAddMeal = () => (
     <View style={styles.quickMealContainer}>
-      <Text style={styles.sectionTitle}>Quick Add</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Add</Text>
       <View style={styles.quickMealGrid}>
         {["Breakfast", "Lunch", "Dinner", "Snack"].map((mealType) => (
           <TouchableOpacity
@@ -211,7 +214,7 @@ const NutritionScreen = ({ navigation }) => {
                 ? "🍽️"
                 : "🎃"}
             </Text>
-            <Text style={styles.quickMealText}>{mealType}</Text>
+            <Text style={[styles.quickMealText, { color: colors.text }]}>{mealType}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -220,9 +223,9 @@ const NutritionScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <Text>Loading nutrition data...</Text>
+          <Text style={{ color: colors.text }}>Loading nutrition data...</Text>
         </View>
       </SafeAreaView>
     );
@@ -247,8 +250,8 @@ const NutritionScreen = ({ navigation }) => {
         }
       >
         {/* Daily Summary */}
-        <View style={styles.summaryContainer}>
-          <Text style={styles.sectionTitle}>Today's Summary</Text>
+        <View style={[styles.summaryContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Summary</Text>
           <View style={styles.caloriesSummary}>
             <Text style={styles.caloriesNumber}>
               {Math.round(todayNutrition.totalCalories)}
@@ -257,45 +260,19 @@ const NutritionScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Nutrients Breakdown */}
+        {/* Nutrients */}
         <View style={styles.nutrientsContainer}>
-          <Text style={styles.sectionTitle}>Nutrients</Text>
-          <NutrientCard
-            title="Protein"
-            current={todayNutrition.nutrients.protein}
-            target={dailyTargets.protein}
-            unit="g"
-            color="#FF6B6B"
-          />
-          <NutrientCard
-            title="Carbohydrates"
-            current={todayNutrition.nutrients.carbs}
-            target={dailyTargets.carbs}
-            unit="g"
-            color="#4ECDC4"
-          />
-          <NutrientCard
-            title="Healthy Fats"
-            current={todayNutrition.nutrients.fat}
-            target={dailyTargets.fat}
-            unit="g"
-            color="#45B7D1"
-          />
-          <NutrientCard
-            title="Fiber"
-            current={todayNutrition.nutrients.fiber}
-            target={dailyTargets.fiber}
-            unit="g"
-            color="#96CEB4"
-          />
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Nutrients</Text>
+          <NutrientCard title="Protein" current={todayNutrition.nutrients.protein} target={dailyTargets.protein} unit="g" color="#FF6B6B" />
+          <NutrientCard title="Carbohydrates" current={todayNutrition.nutrients.carbs} target={dailyTargets.carbs} unit="g" color="#4ECDC4" />
+          <NutrientCard title="Healthy Fats" current={todayNutrition.nutrients.fat} target={dailyTargets.fat} unit="g" color="#45B7D1" />
+          <NutrientCard title="Fiber" current={todayNutrition.nutrients.fiber} target={dailyTargets.fiber} unit="g" color="#96CEB4" />
         </View>
 
-        {/* Quick Add Meals */}
         <QuickAddMeal />
 
-        {/* Today's Meals */}
         <View style={styles.mealsContainer}>
-          <Text style={styles.sectionTitle}>Today's Meals</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Meals</Text>
           {todayNutrition.meals.length === 0 ? (
             <View style={styles.noMealsContainer}>
               <Text style={styles.noMealsText}>No meals logged yet today</Text>
@@ -304,13 +281,10 @@ const NutritionScreen = ({ navigation }) => {
               </Text>
             </View>
           ) : (
-            todayNutrition.meals.map((meal, index) => (
-              <MealCard key={index} meal={meal} />
-            ))
+            todayNutrition.meals.map((meal, index) => <MealCard key={index} meal={meal} />)
           )}
         </View>
 
-        {/* Weekly Chart */}
         <WeeklyChart />
 
         {/* Healthy Eating Tips */}
@@ -609,6 +583,50 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 20,
   },
+  title: { fontSize: 24, fontWeight: 'bold' },
+  addButton: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 6 },
+  addButtonText: { color: 'white', fontSize: 16, fontWeight: '600' },
+  content: { flex: 1 },
+  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 15 },
+  summaryContainer: { margin: 20, padding: 20, borderRadius: 12, alignItems: 'center', borderWidth: 1 },
+  caloriesSummary: { alignItems: 'center' },
+  caloriesNumber: { fontSize: 36, fontWeight: 'bold', marginBottom: 5 },
+  caloriesLabel: { fontSize: 16 },
+  nutrientsContainer: { paddingHorizontal: 20, marginBottom: 20 },
+  nutrientCard: { padding: 15, borderRadius: 8, marginBottom: 10, borderWidth: 1 },
+  nutrientHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  nutrientTitle: { fontSize: 16, fontWeight: '600' },
+  nutrientValues: { fontSize: 14, fontWeight: '500' },
+  progressBarContainer: { height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 5 },
+  progressBar: { height: '100%', borderRadius: 3 },
+  percentageText: { fontSize: 12 },
+  quickMealContainer: { paddingHorizontal: 20, marginBottom: 20 },
+  quickMealGrid: { flexDirection: 'row', justifyContent: 'space-between' },
+  quickMealButton: { padding: 15, borderRadius: 8, alignItems: 'center', flex: 1, marginHorizontal: 5, borderWidth: 1 },
+  quickMealIcon: { fontSize: 24, marginBottom: 8 },
+  quickMealText: { fontSize: 12, fontWeight: '600' },
+  mealsContainer: { paddingHorizontal: 20, marginBottom: 20 },
+  mealCard: { padding: 15, borderRadius: 8, marginBottom: 10, borderWidth: 1 },
+  mealHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  mealType: { fontSize: 16, fontWeight: '600' },
+  mealTime: { fontSize: 14 },
+  foodItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  foodName: { fontSize: 14 },
+  foodCalories: { fontSize: 14, fontWeight: '500' },
+  noMealsContainer: { padding: 30, borderRadius: 8, alignItems: 'center', borderWidth: 1 },
+  noMealsText: { fontSize: 16, marginBottom: 5 },
+  noMealsSubtext: { fontSize: 14 },
+  chartContainer: { margin: 20, padding: 20, borderRadius: 12, borderWidth: 1 },
+  chartTitle: { fontSize: 16, fontWeight: '600', marginBottom: 20, textAlign: 'center' },
+  barsContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 120 },
+  barContainer: { alignItems: 'center', flex: 1 },
+  barBackground: { width: 20, height: 80, borderRadius: 4, justifyContent: 'flex-end', marginBottom: 8 },
+  bar: { width: '100%', borderRadius: 4, minHeight: 2 },
+  barLabel: { fontSize: 12, marginBottom: 2 },
+  barValue: { fontSize: 10, fontWeight: 'bold' },
+  tipsContainer: { margin: 20, marginTop: 0, padding: 20, borderRadius: 12 },
+  tipsTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
+  tipText: { fontSize: 14, marginBottom: 8, lineHeight: 20 },
 });
 
 export default NutritionScreen;

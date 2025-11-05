@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -17,8 +16,9 @@ const AddMealScreen = ({ navigation, route }) => {
   const { mealType = "Breakfast" } = route.params || {};
   const [foods, setFoods] = useState([{ name: "", calories: "" }]);
   const [loading, setLoading] = useState(false);
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
 
-  // Common food items with approximate calories
   const commonFoods = {
     "Apple (medium)": 95,
     "Banana (medium)": 105,
@@ -69,7 +69,6 @@ const AddMealScreen = ({ navigation, route }) => {
       return;
     }
 
-    // Check for valid calorie values
     for (let food of validFoods) {
       if (isNaN(food.calories) || parseInt(food.calories) < 0) {
         Alert.alert(
@@ -113,7 +112,6 @@ const AddMealScreen = ({ navigation, route }) => {
         fiber: Math.round(mealCalories * 0.02), // Rough fiber estimate
       };
 
-      // Create new meal entry
       const newMeal = {
         type: mealType,
         time: new Date().toLocaleTimeString("en-US", {
@@ -127,10 +125,9 @@ const AddMealScreen = ({ navigation, route }) => {
         calories: mealCalories,
       };
 
-      // Update nutrition data
-      const updatedData = {
-        meals: [...existingData.meals, newMeal],
-        totalCalories: existingData.totalCalories + mealCalories,
+      const updated = {
+        meals: [...existing.meals, newMeal],
+        totalCalories: existing.totalCalories + mealCalories,
         nutrients: {
           protein: existingData.nutrients.protein + estimatedNutrients.protein,
           carbs: existingData.nutrients.carbs + estimatedNutrients.carbs,
@@ -159,33 +156,33 @@ const AddMealScreen = ({ navigation, route }) => {
   };
 
   const FoodInput = ({ food, index }) => (
-    <View style={styles.foodInputContainer}>
+    <View style={[styles.foodInputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.foodInputHeader}>
-        <Text style={styles.foodInputTitle}>Food Item {index + 1}</Text>
+        <Text style={[styles.foodInputTitle, { color: colors.text }]}>Food Item {index + 1}</Text>
         {foods.length > 1 && (
           <TouchableOpacity onPress={() => removeFoodField(index)}>
-            <Text style={styles.removeButton}>Remove</Text>
+            <Text style={[styles.removeButton, { color: '#FF3B30' }]}>Remove</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      <Text style={styles.inputLabel}>Food Name</Text>
+      <Text style={[styles.inputLabel, { color: colors.text }]}>Food Name</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.input, color: colors.text, borderColor: colors.border }]}
         value={food.name}
         onChangeText={(text) => updateFood(index, "name", text)}
         placeholder="e.g., Grilled Chicken"
-        returnKeyType="next"
+        placeholderTextColor={colors.subtext}
       />
 
-      <Text style={styles.inputLabel}>Calories</Text>
+      <Text style={[styles.inputLabel, { color: colors.text }]}>Calories</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.input, color: colors.text, borderColor: colors.border }]}
         value={food.calories}
         onChangeText={(text) => updateFood(index, "calories", text)}
         placeholder="e.g., 165"
+        placeholderTextColor={colors.subtext}
         keyboardType="numeric"
-        returnKeyType="next"
       />
 
       {/* Common foods suggestions */}
@@ -197,12 +194,12 @@ const AddMealScreen = ({ navigation, route }) => {
       >
         {Object.entries(commonFoods).map(([foodName, calories]) => (
           <TouchableOpacity
-            key={foodName}
-            style={styles.suggestionChip}
-            onPress={() => selectCommonFood(foodName, calories, index)}
+            key={name}
+            style={[styles.suggestionChip, { backgroundColor: colors.border }]}
+            onPress={() => selectCommonFood(name, cal, index)}
           >
-            <Text style={styles.suggestionText}>{foodName}</Text>
-            <Text style={styles.suggestionCalories}>{calories} cal</Text>
+            <Text style={[styles.suggestionText, { color: colors.text }]}>{name}</Text>
+            <Text style={[styles.suggestionCalories, { color: colors.subtext }]}>{cal} cal</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -210,13 +207,12 @@ const AddMealScreen = ({ navigation, route }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
+          <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Add {mealType}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Add {mealType}</Text>
         <TouchableOpacity onPress={saveMeal} disabled={loading}>
           <Text style={[styles.saveButton, loading && styles.disabled]}>
             {loading ? "Saving..." : "Save"}
@@ -230,7 +226,7 @@ const AddMealScreen = ({ navigation, route }) => {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.mealTypeContainer}>
-          <Text style={styles.mealTypeTitle}>Meal Type</Text>
+          <Text style={[styles.mealTypeTitle, { color: colors.text }]}>Meal Type</Text>
           <View style={styles.mealTypeSelector}>
             {["Breakfast", "Lunch", "Dinner", "Snack"].map((type) => (
               <TouchableOpacity
@@ -254,14 +250,15 @@ const AddMealScreen = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Food Inputs */}
-        {foods.map((food, index) => (
-          <FoodInput key={index} food={food} index={index} />
+        {foods.map((food, i) => (
+          <FoodInput key={i} food={food} index={i} />
         ))}
 
-        {/* Add More Food Button */}
-        <TouchableOpacity style={styles.addFoodButton} onPress={addFoodField}>
-          <Text style={styles.addFoodButtonText}>+ Add Another Food</Text>
+        <TouchableOpacity
+          style={[styles.addFoodButton, { borderColor: colors.accent, backgroundColor: colors.card }]}
+          onPress={addFoodField}
+        >
+          <Text style={[styles.addFoodButtonText, { color: colors.accent }]}>+ Add Another Food</Text>
         </TouchableOpacity>
 
         {/* Total Calories Preview */}
@@ -342,6 +339,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
+  title: { fontSize: 18, fontWeight: 'bold' },
+  cancelButton: { fontSize: 16 },
+  saveButton: { fontSize: 16, fontWeight: '600' },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  mealTypeContainer: { marginBottom: 25 },
+  mealTypeTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10 },
+  mealTypeSelector: { flexDirection: 'row', justifyContent: 'space-between' },
   mealTypeButton: {
     flex: 1,
     paddingVertical: 10,
@@ -453,6 +457,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
+  mealTypeButtonText: { fontSize: 14, fontWeight: '500' },
+  foodInputContainer: { padding: 20, borderRadius: 12, marginBottom: 20, borderWidth: 1 },
+  foodInputHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
+  foodInputTitle: { fontSize: 16, fontWeight: '600' },
+  removeButton: { fontSize: 14, fontWeight: '500' },
+  inputLabel: { fontSize: 14, fontWeight: '500', marginBottom: 8, marginTop: 10 },
+  input: { paddingHorizontal: 15, paddingVertical: 12, borderRadius: 8, fontSize: 16, borderWidth: 1 },
+  suggestionsTitle: { fontSize: 14, fontWeight: '500', marginTop: 15, marginBottom: 10 },
+  suggestionChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6, marginRight: 8, minWidth: 80 },
+  suggestionText: { fontSize: 12, fontWeight: '500', textAlign: 'center', marginBottom: 2 },
+  suggestionCalories: { fontSize: 10 },
+  addFoodButton: { padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 20, borderWidth: 1 },
+  addFoodButtonText: { fontSize: 16, fontWeight: '500' },
   totalContainer: {
     backgroundColor: "white",
     padding: 20,
@@ -493,6 +510,11 @@ const styles = StyleSheet.create({
     color: "#2E7D32",
     lineHeight: 20,
   },
+  totalLabel: { fontSize: 18, fontWeight: '600' },
+  totalValue: { fontSize: 24, fontWeight: 'bold' },
+  reminderContainer: { padding: 20, borderRadius: 12 },
+  reminderTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10 },
+  reminderText: { fontSize: 14, lineHeight: 20 },
 });
 
 export default AddMealScreen;

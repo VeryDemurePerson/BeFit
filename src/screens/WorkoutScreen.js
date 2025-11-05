@@ -36,16 +36,19 @@ const WorkoutScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Refresh workouts when screen comes into focus (after adding/editing a workout)
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
+
   useFocusEffect(
     React.useCallback(() => {
       fetchWorkouts();
     }, [])
   );
 
-  useEffect(() => {
+ useEffect(() => {
     fetchWorkouts();
-  }, []);
+  }, []);   
+  
 
   const fetchWorkouts = async () => {
     try {
@@ -135,12 +138,13 @@ const WorkoutScreen = ({ navigation }) => {
     // Always show duration
     details.push(
       <View key="duration" style={styles.workoutDetailItem}>
-        <Text style={styles.workoutDetailLabel}>Duration:</Text>
-        <Text style={styles.workoutDetailValue}>{workout.duration} min</Text>
+        <Text style={[styles.workoutDetailLabel, { color: colors.subtext }]}>Duration:</Text>
+        <Text style={[styles.workoutDetailValue, { color: colors.text }]}>
+          {workout.duration} min
+        </Text>
       </View>
     );
 
-    // Show detected fields from dynamic form
     if (workout.detectedFields) {
       Object.entries(workout.detectedFields).forEach(([field, value]) => {
         if (value !== null && value !== undefined) {
@@ -168,8 +172,8 @@ const WorkoutScreen = ({ navigation }) => {
 
           details.push(
             <View key={field} style={styles.workoutDetailItem}>
-              <Text style={styles.workoutDetailLabel}>{label}:</Text>
-              <Text style={styles.workoutDetailValue}>{displayValue}</Text>
+              <Text style={[styles.workoutDetailLabel, { color: colors.subtext }]}>{label}:</Text>
+              <Text style={[styles.workoutDetailValue, { color: colors.text }]}>{displayValue}</Text>
             </View>
           );
         }
@@ -214,9 +218,9 @@ const WorkoutScreen = ({ navigation }) => {
       : new Date(workout.createdAt || Date.now());
 
     return (
-      <View style={styles.workoutCard}>
+      <View style={[styles.workoutCard, { backgroundColor: colors.card }]}>
         <View style={styles.workoutHeader}>
-          <Text style={styles.workoutExercise}>{workout.exercise}</Text>
+          <Text style={[styles.workoutExercise, { color: colors.text }]}>{workout.exercise}</Text>
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={styles.editButton}
@@ -257,7 +261,9 @@ const WorkoutScreen = ({ navigation }) => {
 
         {workout.notes && (
           <View style={styles.notesContainer}>
-            <Text style={styles.workoutNotes}>{workout.notes}</Text>
+            <Text style={[styles.workoutNotes, { color: colors.subtext }]}>
+              {workout.notes}
+            </Text>
           </View>
         )}
 
@@ -298,10 +304,10 @@ const WorkoutScreen = ({ navigation }) => {
     }).length;
 
     return (
-      <View style={styles.statsContainer}>
+      <View style={[styles.statsContainer, { backgroundColor: colors.card }]}>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{totalWorkouts}</Text>
-          <Text style={styles.statLabel}>Total Workouts</Text>
+          <Text style={[styles.statNumber, { color: colors.accent }]}>{totalWorkouts}</Text>
+          <Text style={[styles.statLabel, { color: colors.subtext }]}>Total Workouts</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>
@@ -310,8 +316,8 @@ const WorkoutScreen = ({ navigation }) => {
           <Text style={styles.statLabel}>Hours Trained</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{thisWeek}</Text>
-          <Text style={styles.statLabel}>This Week</Text>
+          <Text style={[styles.statNumber, { color: colors.accent }]}>{thisWeek}</Text>
+          <Text style={[styles.statLabel, { color: colors.subtext }]}>This Week</Text>
         </View>
       </View>
     );
@@ -319,9 +325,9 @@ const WorkoutScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading workouts...</Text>
+          <Text style={[styles.loadingText, { color: colors.text }]}>Loading workouts...</Text>
         </View>
       </SafeAreaView>
     );
@@ -341,20 +347,16 @@ const WorkoutScreen = ({ navigation }) => {
 
       <ScrollView
         style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Stats Section */}
         {workouts.length > 0 && <WorkoutStats />}
 
-        {/* Workouts List */}
         <View style={styles.workoutsList}>
           {workouts.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateIcon}>💪</Text>
-              <Text style={styles.emptyStateTitle}>No workouts yet</Text>
-              <Text style={styles.emptyStateText}>
+              <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No workouts yet</Text>
+              <Text style={[styles.emptyStateText, { color: colors.subtext }]}>
                 Start your fitness journey by logging your first workout!
               </Text>
               <TouchableOpacity
@@ -365,9 +367,7 @@ const WorkoutScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           ) : (
-            workouts.map((workout) => (
-              <WorkoutCard key={workout.id} workout={workout} />
-            ))
+            workouts.map((workout) => <WorkoutCard key={workout.id} workout={workout} />)
           )}
         </View>
       </ScrollView>
@@ -404,6 +404,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
+  title: { fontSize: 24, fontWeight: 'bold' },
   addButton: {
     backgroundColor: "#007AFF",
     paddingHorizontal: 15,
@@ -452,10 +453,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
+  statItem: { flex: 1, alignItems: 'center' },
+  statNumber: { fontSize: 24, fontWeight: 'bold' },
+  statLabel: { fontSize: 12, textAlign: 'center' },
+  workoutsList: { paddingHorizontal: 20, paddingBottom: 20 },
   workoutCard: {
     backgroundColor: "white",
     padding: 16,
     borderRadius: 12,
+    padding: 16,
     marginBottom: 15,
     shadowColor: "#000",
     shadowOffset: {
@@ -482,6 +488,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
+  workoutHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  workoutExercise: { fontSize: 18, fontWeight: 'bold' },
+  actionButtons: { flexDirection: 'row', gap: 8 },
   editButton: {
     backgroundColor: "#007AFF",
     paddingHorizontal: 12,

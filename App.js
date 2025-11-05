@@ -46,7 +46,6 @@ const TabIcon = ({ name, focused, color, size }) => {
         return ".";
     }
   };
-
   return (
     <Text
       style={{
@@ -69,7 +68,7 @@ function AuthStack() {
   );
 }
 
-// Workout Stack (Workout list + Add/Edit workout)
+// Workout stack
 function WorkoutStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -92,7 +91,7 @@ function WorkoutStack() {
   );
 }
 
-// Goals Stack (Goals list + Edit goal)
+// Goals stack
 function GoalsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -108,7 +107,7 @@ function GoalsStack() {
   );
 }
 
-// Profile Stack
+// Profile stack
 function ProfileStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -132,7 +131,7 @@ function ProfileStack() {
   );
 }
 
-// Nutrition Stack
+// Nutrition stack
 function NutritionStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -150,6 +149,9 @@ function NutritionStack() {
 
 // Main App Tabs (after login)
 function MainTabs() {
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -224,7 +226,8 @@ function MainTabs() {
   );
 }
 
-export default function App() {
+// Root App
+function AppContent() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigationRef = useRef();

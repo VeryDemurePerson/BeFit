@@ -27,6 +27,8 @@ const EditGoalScreen = ({ navigation, route }) => {
   const { goalType, currentValue } = route.params;
   const [newValue, setNewValue] = useState(currentValue.toString());
   const [loading, setLoading] = useState(false);
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
 
   const getGoalTitle = (goalType) => {
     switch (goalType) {
@@ -102,16 +104,11 @@ const EditGoalScreen = ({ navigation, route }) => {
       if (userDoc.exists()) {
         const currentGoals = userDoc.data().goals || {};
         await updateDoc(userRef, {
-          goals: {
-            ...currentGoals,
-            [goalType]: parseInt(newValue),
-          },
+          goals: { ...currentGoals, [goalType]: parseInt(newValue) },
         });
       } else {
         await setDoc(userRef, {
-          goals: {
-            [goalType]: parseInt(newValue),
-          },
+          goals: { [goalType]: parseInt(newValue) },
           email: auth.currentUser.email,
           createdAt: new Date(),
         });
@@ -148,13 +145,18 @@ const EditGoalScreen = ({ navigation, route }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
+          <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Edit Goal</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Edit Goal</Text>
         <TouchableOpacity onPress={updateGoal} disabled={loading}>
           <Text style={[styles.saveButton, loading && styles.disabled]}>
             {loading ? "Saving..." : "Save"}
@@ -169,33 +171,56 @@ const EditGoalScreen = ({ navigation, route }) => {
       >
         <View style={styles.goalInfoContainer}>
           <Text style={styles.goalIcon}>{getGoalIcon(goalType)}</Text>
-          <Text style={styles.goalTitle}>{getGoalTitle(goalType)}</Text>
-          <Text style={styles.goalHint}>{getGoalHint(goalType)}</Text>
+          <Text style={[styles.goalTitle, { color: colors.text }]}>
+            {getGoalTitle(goalType)}
+          </Text>
+          <Text style={[styles.goalHint, { color: colors.subtext }]}>
+            {getGoalHint(goalType)}
+          </Text>
         </View>
 
-        <View style={styles.currentValueContainer}>
-          <Text style={styles.currentValueLabel}>Current Goal:</Text>
-          <Text style={styles.currentValue}>{currentValue}</Text>
+        <View
+          style={[
+            styles.currentValueContainer,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.currentValueLabel, { color: colors.subtext }]}>
+            Current Goal:
+          </Text>
+          <Text style={[styles.currentValue, { color: colors.accent }]}>
+            {currentValue}
+          </Text>
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>New Goal Value</Text>
+          <Text style={[styles.inputLabel, { color: colors.text }]}>New Goal Value</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
             value={newValue}
             onChangeText={setNewValue}
             keyboardType="numeric"
             placeholder="Enter goal value"
+            placeholderTextColor={colors.subtext}
             returnKeyType="done"
-            autoFocus={true}
+            autoFocus
           />
         </View>
 
         <View style={styles.suggestionsContainer}>
-          <Text style={styles.suggestionsTitle}>Quick Select:</Text>
+          <Text style={[styles.suggestionsTitle, { color: colors.text }]}>
+            Quick Select:
+          </Text>
           <View style={styles.suggestionsGrid}>
-            {getSuggestions(goalType).map((suggestion) => (
-              <SuggestionButton key={suggestion} value={suggestion} />
+            {getSuggestions(goalType).map(v => (
+              <SuggestionButton key={v} value={v} />
             ))}
           </View>
         </View>

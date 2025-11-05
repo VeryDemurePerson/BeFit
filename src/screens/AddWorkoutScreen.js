@@ -19,7 +19,7 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../services/firebase";
 
-// Exercise database with specific fields for each exercise type
+// Exercise database (unchanged)
 const EXERCISE_DATABASE = {
   // Cardio exercises
   running: {
@@ -146,6 +146,9 @@ const EXERCISE_DATABASE = {
 };
 
 const AddWorkoutScreen = ({ navigation }) => {
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
+
   const [formData, setFormData] = useState({
     exercise: "",
     duration: "",
@@ -156,7 +159,7 @@ const AddWorkoutScreen = ({ navigation }) => {
   const [dynamicFields, setDynamicFields] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // Detect exercise type when user types
+  // Detect exercise type automatically
   useEffect(() => {
     if (formData.exercise.trim().length > 2) {
       const exerciseLower = formData.exercise.toLowerCase().trim();
@@ -169,9 +172,7 @@ const AddWorkoutScreen = ({ navigation }) => {
         const partialMatch = Object.keys(EXERCISE_DATABASE).find(
           (key) => exerciseLower.includes(key) || key.includes(exerciseLower)
         );
-        if (partialMatch) {
-          match = EXERCISE_DATABASE[partialMatch];
-        }
+        if (partialMatch) match = EXERCISE_DATABASE[partialMatch];
       }
 
       if (match && match !== detectedExercise) {
@@ -238,17 +239,13 @@ const AddWorkoutScreen = ({ navigation }) => {
 
   const saveWorkout = async () => {
     if (!validateForm()) return;
-
     setLoading(true);
     try {
-      // Prepare dynamic fields for saving
       const processedDynamicFields = {};
       if (detectedExercise) {
         detectedExercise.fields.forEach((field) => {
           const value = dynamicFields[field];
-          if (value && value.trim()) {
-            processedDynamicFields[field] = parseFloat(value);
-          }
+          if (value && value.trim()) processedDynamicFields[field] = parseFloat(value);
         });
       }
 
@@ -287,10 +284,14 @@ const AddWorkoutScreen = ({ navigation }) => {
 
   const renderDynamicFields = () => {
     if (!detectedExercise) return null;
-
     return (
-      <View style={styles.dynamicFieldsContainer}>
-        <Text style={styles.detectedExerciseText}>
+      <View
+        style={[
+          styles.dynamicFieldsContainer,
+          { backgroundColor: colors.highlight, borderColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.detectedExerciseText, { color: colors.accent }]}>
           Detected: {formData.exercise} ({detectedExercise.type})
         </Text>
 
@@ -329,12 +330,11 @@ const AddWorkoutScreen = ({ navigation }) => {
           exercise.toLowerCase() !== formData.exercise.toLowerCase()
       )
       .slice(0, 5);
-
     if (suggestions.length === 0) return null;
 
     return (
       <View style={styles.suggestionsContainer}>
-        <Text style={styles.suggestionsTitle}>Suggestions:</Text>
+        <Text style={[styles.suggestionsTitle, { color: colors.subtext }]}>Suggestions:</Text>
         <View style={styles.suggestionsGrid}>
           {suggestions.map((suggestion) => (
             <TouchableOpacity
@@ -354,13 +354,18 @@ const AddWorkoutScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
+          <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Add Workout</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Add Workout</Text>
         <TouchableOpacity onPress={saveWorkout} disabled={loading}>
           <Text style={[styles.saveButton, loading && styles.disabled]}>
             {loading ? "Saving..." : "Save"}
@@ -375,47 +380,52 @@ const AddWorkoutScreen = ({ navigation }) => {
       >
         {/* Exercise Name */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Exercise Name *</Text>
+          <Text style={[styles.inputLabel, { color: colors.text }]}>Exercise Name *</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
+            ]}
             value={formData.exercise}
             onChangeText={(text) => updateField("exercise", text)}
             placeholder="e.g., Running, Push-ups, Yoga"
-            returnKeyType="next"
-            autoFocus
+            placeholderTextColor={colors.subtext}
           />
         </View>
 
-        {/* Exercise Suggestions */}
         {renderExerciseSuggestions()}
 
         {/* Duration */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Duration (minutes) *</Text>
+          <Text style={[styles.inputLabel, { color: colors.text }]}>Duration (minutes) *</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
+            ]}
             value={formData.duration}
             onChangeText={(text) => updateField("duration", text)}
             placeholder="30"
+            placeholderTextColor={colors.subtext}
             keyboardType="numeric"
-            returnKeyType="next"
           />
         </View>
 
-        {/* Dynamic Fields based on detected exercise */}
         {renderDynamicFields()}
 
         {/* Notes */}
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Notes</Text>
+          <Text style={[styles.inputLabel, { color: colors.text }]}>Notes</Text>
           <TextInput
-            style={[styles.input, styles.notesInput]}
+            style={[
+              styles.input,
+              styles.notesInput,
+              { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
+            ]}
             value={formData.notes}
             onChangeText={(text) => updateField("notes", text)}
             placeholder="How did it feel? Any observations..."
             multiline
-            numberOfLines={4}
-            returnKeyType="done"
           />
         </View>
 
@@ -481,6 +491,13 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 8,
   },
+  cancelButton: { fontSize: 16 },
+  title: { fontSize: 18, fontWeight: 'bold' },
+  saveButton: { fontSize: 16, fontWeight: '600' },
+  content: { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  inputContainer: { marginBottom: 20 },
+  inputLabel: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
   input: {
     backgroundColor: "white",
     paddingHorizontal: 15,
@@ -508,6 +525,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
+  notesInput: { height: 100, textAlignVertical: 'top' },
+  suggestionsContainer: { marginBottom: 20 },
+  suggestionsTitle: { fontSize: 14, fontWeight: '600', marginBottom: 10 },
+  suggestionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   suggestionChip: {
     backgroundColor: "white",
     paddingHorizontal: 12,

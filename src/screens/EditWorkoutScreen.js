@@ -5,8 +5,8 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
   TextInput,
   Alert,
 } from "react-native";
@@ -291,17 +291,17 @@ const EditWorkoutScreen = ({ navigation, route }) => {
   const saveWorkout = async () => {
     if (!validateForm()) return;
 
-    setSaving(true);
+    setLoading(true);
     try {
       const workoutData = {
-        exercise: formData.exercise.trim(),
-        duration: parseInt(formData.duration),
-        sets: formData.sets ? parseInt(formData.sets) : null,
-        reps: formData.reps ? parseInt(formData.reps) : null,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        notes: formData.notes.trim(),
-        type: formData.type,
-        userId: auth.currentUser.uid,
+        exercise: editedWorkout.exercise,
+        duration: parseInt(editedWorkout.duration),
+        sets: editedWorkout.sets ? parseInt(editedWorkout.sets) : null,
+        reps: editedWorkout.reps ? parseInt(editedWorkout.reps) : null,
+        weight: editedWorkout.weight ? parseFloat(editedWorkout.weight) : null,
+        notes: editedWorkout.notes,
+        type: editedWorkout.type,
+        updatedAt: new Date(),
       };
 
       if (isEditing) {
@@ -324,7 +324,7 @@ const EditWorkoutScreen = ({ navigation, route }) => {
       console.error("Error saving workout:", error);
       Alert.alert("Error", "Failed to save workout");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
@@ -350,11 +350,16 @@ const EditWorkoutScreen = ({ navigation, route }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
+          <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
         <Text style={styles.title}>
           {isEditing ? "Edit Workout" : "Add Workout"}
@@ -372,12 +377,23 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Workout Type Selector */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Workout Type</Text>
-          <View style={styles.typeSelector}>
-            {workoutTypes.map((type) => (
-              <TouchableOpacity
-                key={type}
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Workout Type</Text>
+        <View style={styles.typeSelector}>
+          {['strength', 'cardio', 'flexibility'].map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[
+                styles.typeButton,
+                {
+                  backgroundColor:
+                    editedWorkout.type === type ? colors.accent : colors.card,
+                  borderColor:
+                    editedWorkout.type === type ? colors.accent : colors.border,
+                },
+              ]}
+              onPress={() => setEditedWorkout((prev) => ({ ...prev, type }))}
+            >
+              <Text
                 style={[
                   styles.typeButton,
                   formData.type === type && styles.typeButtonActive,
@@ -398,27 +414,63 @@ const EditWorkoutScreen = ({ navigation, route }) => {
         </View>
 
         {/* Exercise Name */}
-        <InputField
-          label="Exercise Name *"
-          field="exercise"
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Exercise Name *</Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
+          value={editedWorkout.exercise}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, exercise: text }))
+          }
           placeholder="e.g., Push-ups, Running, Yoga"
+          placeholderTextColor={colors.subtext}
         />
 
         {/* Duration */}
-        <InputField
-          label="Duration (minutes) *"
-          field="duration"
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Duration (minutes) *</Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
+          value={editedWorkout.duration}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, duration: text }))
+          }
           placeholder="30"
+          placeholderTextColor={colors.subtext}
           keyboardType="numeric"
         />
 
         {/* Strength Training Fields */}
         {formData.type === "strength" && (
           <>
-            <InputField
-              label="Sets"
-              field="sets"
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Sets</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={editedWorkout.sets}
+              onChangeText={(text) =>
+                setEditedWorkout((prev) => ({ ...prev, sets: text }))
+              }
               placeholder="3"
+              placeholderTextColor={colors.subtext}
               keyboardType="numeric"
             />
 
@@ -426,6 +478,7 @@ const EditWorkoutScreen = ({ navigation, route }) => {
               label="Reps"
               field="reps"
               placeholder="12"
+              placeholderTextColor={colors.subtext}
               keyboardType="numeric"
             />
 
@@ -433,17 +486,31 @@ const EditWorkoutScreen = ({ navigation, route }) => {
               label="Weight (kg)"
               field="weight"
               placeholder="20"
+              placeholderTextColor={colors.subtext}
               keyboardType="numeric"
             />
           </>
         )}
 
         {/* Notes */}
-        <InputField
-          label="Notes"
-          field="notes"
-          placeholder="How did it feel? Any observations..."
-          multiline={true}
+        <Text style={[styles.inputLabel, { color: colors.text }]}>Notes</Text>
+        <TextInput
+          style={[
+            styles.input,
+            styles.notesInput,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
+          value={editedWorkout.notes}
+          onChangeText={(text) =>
+            setEditedWorkout((prev) => ({ ...prev, notes: text }))
+          }
+          placeholder="How did it feel?"
+          placeholderTextColor={colors.subtext}
+          multiline
         />
 
         {/* Tips Section */}
@@ -532,6 +599,12 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 8,
   },
+  cancelButton: { fontSize: 16 },
+  title: { fontSize: 18, fontWeight: 'bold' },
+  saveButton: { fontSize: 16, fontWeight: '600' },
+  content: { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  inputLabel: { fontSize: 16, fontWeight: '600', marginBottom: 8, marginTop: 20 },
   input: {
     backgroundColor: "white",
     paddingHorizontal: 15,
@@ -549,10 +622,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
   },
+  notesInput: { height: 100, textAlignVertical: 'top' },
+  typeSelector: { flexDirection: 'row', marginBottom: 10 },
   typeButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 15,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#ddd",
@@ -600,6 +674,13 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
   },
+  typeButtonText: { fontSize: 14, fontWeight: '600' },
+  originalDateContainer: { padding: 15, borderRadius: 8, marginTop: 20, borderWidth: 1 },
+  originalDateLabel: { fontSize: 14, fontWeight: '600', marginBottom: 5 },
+  originalDateValue: { fontSize: 16 },
+  warningContainer: { padding: 15, borderRadius: 8, marginTop: 20, borderWidth: 1 },
+  warningTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  warningText: { fontSize: 14, lineHeight: 20 },
 });
 
 export default EditWorkoutScreen;

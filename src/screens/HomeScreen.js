@@ -34,6 +34,9 @@ const HomeScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
+
   useEffect(() => {
     fetchAllData();
   }, []);
@@ -119,11 +122,19 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const QuickStatCard = ({ title, value, unit, color, icon }) => (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
+    <View
+      style={[
+        styles.statCard,
+        {
+          borderLeftColor: color,
+          backgroundColor: colors.card,
+        },
+      ]}
+    >
       <View style={{ marginBottom: 5 }}>{icon}</View>
       <Text style={[styles.statTitle, { color }]}>{title}</Text>
-      <Text style={styles.statValue}>
-        {value} <Text style={styles.statUnit}>{unit}</Text>
+      <Text style={[styles.statValue, { color: colors.text }]}>
+        {value} <Text style={[styles.statUnit, { color: colors.subtext }]}>{unit}</Text>
       </Text>
     </View>
   );
@@ -140,14 +151,21 @@ const HomeScreen = ({ navigation }) => {
   );
 
   const RecentWorkoutItem = ({ workout }) => (
-    <View style={styles.recentWorkoutItem}>
+    <View
+      style={[
+        styles.recentWorkoutItem,
+        { borderBottomColor: colors.border, backgroundColor: colors.card },
+      ]}
+    >
       <View style={styles.recentWorkoutInfo}>
-        <Text style={styles.recentWorkoutName}>{workout.exercise}</Text>
-        <Text style={styles.recentWorkoutDetails}>
+        <Text style={[styles.recentWorkoutName, { color: colors.text }]}>
+          {workout.exercise}
+        </Text>
+        <Text style={[styles.recentWorkoutDetails, { color: colors.subtext }]}>
           {workout.duration} min • {workout.type}
         </Text>
       </View>
-      <Text style={styles.recentWorkoutDate}>
+      <Text style={[styles.recentWorkoutDate, { color: colors.subtext }]}>
         {new Date(workout.createdAt.toDate()).toLocaleDateString()}
       </Text>
     </View>
@@ -155,16 +173,18 @@ const HomeScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
         <View style={styles.loadingContainer}>
-          <Text>Loading...</Text>
+          <Text style={{ color: colors.text }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -186,7 +206,9 @@ const HomeScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Today's Progress</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Today's Progress
+          </Text>
           <View style={styles.statsGrid}>
             <QuickStatCard
               title="Workouts"
@@ -226,7 +248,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
           <View style={styles.actionGrid}>
             <ActionButton
               title="Log Workout"
@@ -305,28 +327,35 @@ const HomeScreen = ({ navigation }) => {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Workouts</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Recent Workouts
+            </Text>
             {recentWorkouts.length > 0 && (
-              <TouchableOpacity onPress={() => navigation.navigate("Workout")}>
-                <Text style={styles.seeAllText}>See All</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Workout')}>
+                <Text style={[styles.seeAllText, { color: colors.accent }]}>See All</Text>
               </TouchableOpacity>
             )}
           </View>
 
           {recentWorkouts.length === 0 ? (
-            <View style={styles.emptyWorkouts}>
-              <Text style={styles.emptyWorkoutsText}>
+            <View
+              style={[
+                styles.emptyWorkouts,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.emptyWorkoutsText, { color: colors.subtext }]}>
                 No workouts yet. Start your fitness journey!
               </Text>
               <TouchableOpacity
-                style={styles.startButton}
-                onPress={() => navigation.navigate("Workout")}
+                style={[styles.startButton, { backgroundColor: colors.accent }]}
+                onPress={() => navigation.navigate('Workout')}
               >
                 <Text style={styles.startButtonText}>Log First Workout</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.recentWorkoutsList}>
+            <View style={[styles.recentWorkoutsList, { backgroundColor: colors.card }]}>
               {recentWorkouts.map((workout) => (
                 <RecentWorkoutItem key={workout.id} workout={workout} />
               ))}
@@ -335,7 +364,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.motivationCard}>
+          <View style={[styles.motivationCard, { backgroundColor: colors.accent }]}>
             <Text style={styles.motivationQuote}>
               "The only bad workout is the one that didn't happen."
             </Text>
@@ -354,9 +383,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingVertical: 20,
-    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
   greeting: {
     fontSize: 24,
