@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+// src/screens/AddMealScreen.js — Light/Dark Mode Ready (Fixed)
 import React, { useState } from 'react';
 import {
   View,
@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
@@ -17,74 +17,37 @@ import { lightTheme, darkTheme } from './themes';
 
 const AddMealScreen = ({ navigation, route }) => {
   const { mealType = 'Breakfast' } = route.params || {};
-  const [foods, setFoods] = useState([{ id: Date.now(), name: '', calories: '', protein: 0, carbs: 0, fat: 0 }]);
+  const [foods, setFoods] = useState([{ id: Date.now(), name: '', calories: '' }]);
   const [loading, setLoading] = useState(false);
-  const [searchSuggestions, setSearchSuggestions] = useState({});
-  const [searchLoading, setSearchLoading] = useState({});
-  const searchTimeouts = useRef({});
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
 
-  const addFoodField = () => setFoods([...foods, { id: Date.now(), name: '', calories: '', protein: 0, carbs: 0, fat: 0 }]);
-  const removeFoodField = (id) => foods.length > 1 && setFoods(foods.filter((food) => food.id !== id));
+  const commonFoods = {
+    'Apple (medium)': 95,
+    'Banana (medium)': 105,
+    'Chicken breast (100g)': 165,
+    'Rice (1 cup cooked)': 205,
+    'Egg (large)': 70,
+    'Avocado (medium)': 234,
+    'Salmon (100g)': 208,
+    'Yogurt (1 cup)': 150,
+    'Oatmeal (1 cup)': 154,
+    'Broccoli (1 cup)': 25,
+    'Sweet potato (medium)': 103,
+    'Almonds (1 oz)': 164,
+    'Orange (medium)': 62,
+    'Pasta (1 cup cooked)': 220,
+  };
 
-  const performSearch = useCallback(async (text, id) => {
-    console.log('performSearch called with:', text, 'for id:', id);
-    const trimmedText = text?.trim();
-    if (!trimmedText || trimmedText.length < 2 || !/[a-zA-Z0-9]/.test(trimmedText)) {
-      setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
-      setSearchLoading(prev => ({ ...prev, [id]: false }));
-      return;
-    }
-    
-    setSearchLoading(prev => ({ ...prev, [id]: true }));
-    try {
-      const results = await searchFoods(trimmedText);
-      console.log('Search completed, got', results?.length || 0, 'results for id', id);
-      
-      setSearchSuggestions(prev => ({ ...prev, [id]: results || [] }));
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
-    } finally {
-      setSearchLoading(prev => ({ ...prev, [id]: false }));
-    }
-  }, []);
+  const addFoodField = () => setFoods([...foods, { id: Date.now(), name: '', calories: '' }]);
+  const removeFoodField = (index) => foods.length > 1 && setFoods(foods.filter((_, i) => i !== index));
+  const updateFood = (index, field, value) =>
+    setFoods(foods.map((food, i) => (i === index ? { ...food, [field]: value } : food)));
 
-  const handleFoodNameChange = useCallback((text, id) => {
-    console.log('handleFoodNameChange called with:', text, 'for id:', id);
-    
-    // Update the food name immediately
-    setFoods(prevFoods => 
-      prevFoods.map((food) => 
-        food.id === id ? { ...food, name: text } : food
-      )
-    );
-    
-    if (searchTimeouts.current[id]) {
-      clearTimeout(searchTimeouts.current[id]);
-      console.log('Cleared previous timeout for id:', id);
-    }
-    
-    const trimmedText = text?.trim();
-    if (trimmedText && trimmedText.length >= 2 && /[a-zA-Z0-9]/.test(trimmedText)) {
-      console.log('Setting timeout to search for:', trimmedText);
-      searchTimeouts.current[id] = setTimeout(() => {
-        console.log('Timeout fired! Performing search for id:', id);
-        performSearch(text, id);
-      }, 400);
-    } else {
-      console.log('Text too short or invalid, clearing suggestions for id:', id);
-      setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
-      setSearchLoading(prev => ({ ...prev, [id]: false }));
-    }
-  }, [performSearch]);
-
-  useEffect(() => {
-    return () => {
-      Object.values(searchTimeouts.current).forEach(timeout => {
-        if (timeout) clearTimeout(timeout);
-      });
-    };
-  }, []);
+  const selectCommonFood = (name, calories, index) => {
+    updateFood(index, 'name', name);
+    updateFood(index, 'calories', calories.toString());
+  };
 
   const saveMeal = async () => {
     const validFoods = foods.filter(f => f.name.trim() && f.calories);
@@ -225,6 +188,7 @@ const AddMealScreen = ({ navigation, route }) => {
             <Text style={styles.loadingText}>Searching...</Text>
           </View>
         )}
+      </View>
 
         {!loadingSuggestions && suggestions.length === 0 && food.name.length >= 2 && (
           <View style={styles.noResultsContainer}>
@@ -363,7 +327,6 @@ const AddMealScreen = ({ navigation, route }) => {
             ))}
           </View>
         </View>
-      </View>
 
       {foods.map((food) => (
         <FoodInput key={food.id} food={food} />
