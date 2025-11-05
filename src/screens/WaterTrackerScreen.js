@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,19 +8,11 @@ import {
   TouchableOpacity,
   Alert,
   Dimensions,
-} from "react-native";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
-import { auth, db } from "../services/firebase";
+} from 'react-native';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../services/firebase';
 
-const { width: screenWidth } = Dimensions.get("window");
+const { width: screenWidth } = Dimensions.get('window');
 
 const WaterTrackerScreen = () => {
   const [todayWater, setTodayWater] = useState(0);
@@ -37,7 +29,7 @@ const WaterTrackerScreen = () => {
       await fetchTodayWater();
       await fetchWeeklyHistory();
     } catch (error) {
-      console.error("Error fetching water data:", error);
+      console.error('Error fetching water data:', error);
     } finally {
       setLoading(false);
     }
@@ -45,153 +37,139 @@ const WaterTrackerScreen = () => {
 
   const fetchTodayWater = async () => {
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const waterDoc = await getDoc(
-        doc(db, "water_intake", `${auth.currentUser.uid}_${today}`)
-      );
-
+      const today = new Date().toISOString().split('T')[0];
+      const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
+      
       if (waterDoc.exists()) {
         setTodayWater(waterDoc.data().glasses || 0);
       } else {
         setTodayWater(0);
       }
     } catch (error) {
-      console.error("Error fetching today water:", error);
+      console.error('Error fetching today water:', error);
     }
   };
 
+  
   const fetchWeeklyHistory = async () => {
     try {
       const today = new Date();
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(today.getDate() - 6);
 
-      const startDate = sevenDaysAgo.toISOString().split("T")[0];
-      const endDate = today.toISOString().split("T")[0];
+      const startDate = sevenDaysAgo.toISOString().split('T')[0];
+      const endDate = today.toISOString().split('T')[0];
 
+      
       const dateMap = new Map();
       for (let i = 0; i < 7; i++) {
         const date = new Date();
         date.setDate(today.getDate() - i);
-        const dateString = date.toISOString().split("T")[0];
+        const dateString = date.toISOString().split('T')[0];
         dateMap.set(dateString, {
           date: dateString,
-          dayName: date.toLocaleDateString("en-US", { weekday: "short" }),
-          glasses: 0,
+          dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+          glasses: 0
         });
       }
 
+      
       const q = query(
-        collection(db, "water_intake"),
-        where("userId", "==", auth.currentUser.uid),
-        where("date", ">=", startDate),
-        where("date", "<=", endDate)
+        collection(db, 'water_intake'),
+        where('userId', '==', auth.currentUser.uid),
+        where('date', '>=', startDate),
+        where('date', '<=', endDate)
       );
       const querySnapshot = await getDocs(q);
 
-      querySnapshot.forEach((doc) => {
+      
+      querySnapshot.forEach(doc => {
         const data = doc.data();
         if (dateMap.has(data.date)) {
           dateMap.get(data.date).glasses = data.glasses;
         }
       });
-
-      const history = Array.from(dateMap.values()).sort(
-        (a, b) => new Date(a.date) - new Date(b.date)
-      );
+      
+    
+      const history = Array.from(dateMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
       setWeeklyHistory(history);
+
     } catch (error) {
-      console.error("Error fetching weekly history:", error);
+      console.error('Error fetching weekly history:', error);
     }
   };
 
   const addWaterGlass = async () => {
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const waterDocRef = doc(
-        db,
-        "water_intake",
-        `${auth.currentUser.uid}_${today}`
-      );
-
+      const today = new Date().toISOString().split('T')[0];
+      const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
+      
       const newGlassCount = todayWater + 1;
-
-      await setDoc(
-        waterDocRef,
-        {
-          userId: auth.currentUser.uid,
-          date: today,
-          glasses: newGlassCount,
-          updatedAt: new Date(),
-        },
-        { merge: true }
-      );
-
+      
+      await setDoc(waterDocRef, {
+        userId: auth.currentUser.uid,
+        date: today,
+        glasses: newGlassCount,
+        updatedAt: new Date()
+      }, { merge: true }); 
+      
       setTodayWater(newGlassCount);
-
+      
       // Update today's entry in weekly history
-      setWeeklyHistory((prev) =>
-        prev.map((day) =>
-          day.date === today ? { ...day, glasses: newGlassCount } : day
+      setWeeklyHistory(prev => 
+        prev.map(day => 
+          day.date === today 
+            ? { ...day, glasses: newGlassCount }
+            : day
         )
       );
-
+      
       // Show encouraging message
       if (newGlassCount >= dailyGoal) {
-        Alert.alert(
-          "Congratulations! 🎉",
-          `You've reached your daily water goal of ${dailyGoal} glasses!`
-        );
+        Alert.alert('Congratulations! 🎉', `You've reached your daily water goal of ${dailyGoal} glasses!`);
       } else {
         const remaining = dailyGoal - newGlassCount;
-        Alert.alert(
-          "Great job! 💧",
-          `Glass added! ${remaining} more to reach your daily goal.`
-        );
+        Alert.alert('Great job! 💧', `Glass added! ${remaining} more to reach your daily goal.`);
       }
     } catch (error) {
-      console.error("Error adding water glass:", error);
-      Alert.alert("Error", "Failed to add water glass. Please try again.");
+      console.error('Error adding water glass:', error);
+      Alert.alert('Error', 'Failed to add water glass. Please try again.');
     }
   };
 
   const removeWaterGlass = async () => {
     if (todayWater <= 0) return;
-
+    
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const waterDocRef = doc(
-        db,
-        "water_intake",
-        `${auth.currentUser.uid}_${today}`
-      );
-
+      const today = new Date().toISOString().split('T')[0];
+      const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
+      
       const newGlassCount = todayWater - 1;
-
-      await setDoc(
-        waterDocRef,
-        {
-          userId: auth.currentUser.uid,
-          date: today,
-          glasses: newGlassCount,
-          updatedAt: new Date(),
-        },
-        { merge: true }
-      );
-
+      
+      await setDoc(waterDocRef, {
+        userId: auth.currentUser.uid,
+        date: today,
+        glasses: newGlassCount,
+        updatedAt: new Date()
+      }, { merge: true }); 
+      
       setTodayWater(newGlassCount);
-
+      
       // Update today's entry in weekly history
-      setWeeklyHistory((prev) =>
-        prev.map((day) =>
-          day.date === today ? { ...day, glasses: newGlassCount } : day
+      setWeeklyHistory(prev => 
+        prev.map(day => 
+          day.date === today 
+            ? { ...day, glasses: newGlassCount }
+            : day
         )
       );
+      
     } catch (error) {
-      console.error("Error removing water glass:", error);
-      Alert.alert("Error", "Failed to remove water glass. Please try again.");
+      console.error('Error removing water glass:', error);
+      Alert.alert('Error', 'Failed to remove water glass. Please try again.');
     }
   };
+
 
   const getProgressPercentage = () => {
     return Math.min(Math.round((todayWater / dailyGoal) * 100), 100);
@@ -202,9 +180,7 @@ const WaterTrackerScreen = () => {
     for (let i = 0; i < dailyGoal; i++) {
       glasses.push(
         <View key={i} style={styles.glassContainer}>
-          <Text
-            style={[styles.glassIcon, i < todayWater && styles.filledGlass]}
-          >
+          <Text style={[styles.glassIcon, i < todayWater && styles.filledGlass]}>
             💧
           </Text>
         </View>
@@ -220,15 +196,14 @@ const WaterTrackerScreen = () => {
         {weeklyHistory.map((day, index) => (
           <View key={index} style={styles.barContainer}>
             <View style={styles.barBackground}>
-              <View
+              <View 
                 style={[
-                  styles.bar,
-                  {
-                    height: `${Math.min((day.glasses / dailyGoal) * 100, 100)}`,
-                    backgroundColor:
-                      day.glasses >= dailyGoal ? "#4CAF50" : "#2196F3",
-                  },
-                ]}
+                  styles.bar, 
+                  { 
+                    height: `${Math.min((day.glasses / dailyGoal) * 100, 100)}`%,
+                    backgroundColor: day.glasses >= dailyGoal ? '#4CAF50' : '#2196F3'
+                  }
+                ]} 
               />
             </View>
             <Text style={styles.barLabel}>{day.dayName}</Text>
@@ -245,6 +220,7 @@ const WaterTrackerScreen = () => {
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statSubtitle}>{subtitle}</Text>
     </View>
+    
   );
 
   if (loading) {
@@ -258,10 +234,7 @@ const WaterTrackerScreen = () => {
   }
 
   const weeklyTotal = weeklyHistory.reduce((sum, day) => sum + day.glasses, 0);
-  const weeklyAverage =
-    weeklyHistory.length > 0
-      ? Math.round((weeklyTotal / weeklyHistory.length) * 10) / 10
-      : 0;
+  const weeklyAverage = weeklyHistory.length > 0 ? Math.round(weeklyTotal / weeklyHistory.length * 10) / 10 : 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -273,7 +246,7 @@ const WaterTrackerScreen = () => {
         {/* Today's Progress */}
         <View style={styles.todayContainer}>
           <Text style={styles.todayTitle}>Today's Hydration</Text>
-
+          
           <View style={styles.progressContainer}>
             <Text style={styles.progressText}>
               {todayWater} / {dailyGoal} glasses
@@ -284,11 +257,8 @@ const WaterTrackerScreen = () => {
           </View>
 
           <View style={styles.progressBarContainer}>
-            <View
-              style={[
-                styles.progressBar,
-                { width: `${getProgressPercentage()}` },
-              ]}
+            <View 
+              style={[styles.progressBar, { width: `${getProgressPercentage()}`% }]} 
             />
           </View>
 
@@ -296,12 +266,15 @@ const WaterTrackerScreen = () => {
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.addButton} onPress={addWaterGlass}>
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={addWaterGlass}
+            >
               <Text style={styles.addButtonText}>+ Add Glass</Text>
             </TouchableOpacity>
-
+            
             {todayWater > 0 && (
-              <TouchableOpacity
+              <TouchableOpacity 
                 style={styles.removeButton}
                 onPress={removeWaterGlass}
               >
@@ -348,9 +321,7 @@ const WaterTrackerScreen = () => {
           <Text style={styles.tipText}>• Drink a glass when you wake up</Text>
           <Text style={styles.tipText}>• Keep a water bottle at your desk</Text>
           <Text style={styles.tipText}>• Set hourly reminders</Text>
-          <Text style={styles.tipText}>
-            • Drink before, during, and after workouts
-          </Text>
+          <Text style={styles.tipText}>• Drink before, during, and after workouts</Text>
           <Text style={styles.tipText}>• Add lemon or cucumber for flavor</Text>
         </View>
       </ScrollView>
@@ -361,35 +332,35 @@ const WaterTrackerScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f5f5f5',
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: "white",
+    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
   },
   content: {
     flex: 1,
   },
   todayContainer: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     margin: 20,
     padding: 20,
     borderRadius: 12,
-    alignItems: "center",
-    shadowColor: "#000",
+    alignItems: 'center',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -397,41 +368,41 @@ const styles = StyleSheet.create({
   },
   todayTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 20,
   },
   progressContainer: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 15,
   },
   progressText: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#2196F3",
+    fontWeight: 'bold',
+    color: '#2196F3',
     marginBottom: 5,
   },
   progressPercentage: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
   },
   progressBarContainer: {
-    width: "100%",
+    width: '100%',
     height: 10,
-    backgroundColor: "#E3F2FD",
+    backgroundColor: '#E3F2FD',
     borderRadius: 5,
     marginBottom: 20,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   progressBar: {
-    height: "100%",
-    backgroundColor: "#2196F3",
+    height: '100%',
+    backgroundColor: '#2196F3',
     borderRadius: 5,
   },
   glassesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     marginBottom: 20,
   },
   glassContainer: {
@@ -445,45 +416,45 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   actionButtons: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 15,
   },
   addButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: '#2196F3',
     paddingHorizontal: 30,
     paddingVertical: 12,
     borderRadius: 8,
   },
   addButtonText: {
-    color: "white",
+    color: 'white',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   removeButton: {
-    backgroundColor: "#FF5722",
+    backgroundColor: '#FF5722',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
   },
   removeButtonText: {
-    color: "white",
+    color: 'white',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   statsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 20,
-    justifyContent: "space-between",
+    justifyContent: 'space-between',
   },
   statCard: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     padding: 15,
     borderRadius: 8,
-    width: "48%",
+    width: '48%',
     marginBottom: 15,
     borderLeftWidth: 4,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -491,25 +462,25 @@ const styles = StyleSheet.create({
   },
   statTitle: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
     marginBottom: 5,
   },
   statValue: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
   },
   statSubtitle: {
     fontSize: 12,
-    color: "#999",
+    color: '#999',
     marginTop: 2,
   },
   chartContainer: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     margin: 20,
     padding: 20,
     borderRadius: 12,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -517,46 +488,46 @@ const styles = StyleSheet.create({
   },
   chartTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 20,
-    textAlign: "center",
+    textAlign: 'center',
   },
   barsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
     height: 120,
   },
   barContainer: {
-    alignItems: "center",
+    alignItems: 'center',
     flex: 1,
   },
   barBackground: {
     width: 20,
     height: 80,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
     borderRadius: 4,
-    justifyContent: "flex-end",
+    justifyContent: 'flex-end',
     marginBottom: 8,
   },
   bar: {
-    width: "100%",
+    width: '100%',
     borderRadius: 4,
     minHeight: 2,
   },
   barLabel: {
     fontSize: 12,
-    color: "#666",
+    color: '#666',
     marginBottom: 2,
   },
   barValue: {
     fontSize: 12,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
   },
   tipsContainer: {
-    backgroundColor: "#E8F5E8",
+    backgroundColor: '#E8F5E8',
     margin: 20,
     marginTop: 0,
     padding: 20,
@@ -564,13 +535,13 @@ const styles = StyleSheet.create({
   },
   tipsTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#2E7D32",
+    fontWeight: 'bold',
+    color: '#2E7D32',
     marginBottom: 15,
   },
   tipText: {
     fontSize: 14,
-    color: "#2E7D32",
+    color: '#2E7D32',
     marginBottom: 8,
     lineHeight: 20,
   },

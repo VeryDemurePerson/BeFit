@@ -24,21 +24,6 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#ffffff"
-        }
-      ]
-    ],
-    "notification": {
-      "icon": "./assets/icon.png",
-      "color": "#4CAF50",
-      "androidMode": "default",
-      "androidCollapsedTitle": "Stay Active!"
     }
   }
 }

@@ -1,4 +1,4 @@
-// All this is ai
+// src/screens/ProgressScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -196,7 +196,7 @@ const ProgressScreen = () => {
                       styles.bar,
                       {
                         height: `${height}%`,
-                        backgroundColor: value > 0 ? "#007AFF" : "#E0E0E0",
+                        backgroundColor: value > 0 ? colors.accent : colors.border,
                       },
                     ]}
                   />
