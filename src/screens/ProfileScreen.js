@@ -14,6 +14,8 @@ import { auth, db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useTheme } from './ThemeContext';
 import { lightTheme, darkTheme } from './themes';
+import AchievementsPanel from '../gamification/AchievementsPanel';
+import { readGamification } from '../gamification/engine';
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, toggleTheme } = useTheme();
@@ -25,6 +27,8 @@ const ProfileScreen = ({ navigation }) => {
     email: '',
     avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
   });
+
+  const [g, setG] = useState(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -38,7 +42,18 @@ const ProfileScreen = ({ navigation }) => {
         console.error('Error fetching user:', error);
       }
     };
+
+    const fetchGamification = async () => {
+      try {
+        const meta = await readGamification(auth.currentUser.uid);
+        setG(meta);
+      } catch (error) {
+        console.error('Error fetching gamification:', error);
+      }
+    };
+
     fetchUser();
+    fetchGamification();
   }, []);
 
   const logout = async () => {
@@ -59,6 +74,21 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={[styles.name, { color: colors.text }]}>{userData.name || 'User'}</Text>
           <Text style={[styles.email, { color: colors.text }]}>{userData.email}</Text>
         </View>
+
+        {/* ✅ Achievements Section */}
+        {g ? (
+          <AchievementsPanel
+            levelName={g.levelName}
+            xp={g.xp}
+            streaks={g.streaks}
+            badges={g.badges}
+            colors={colors}
+          />
+        ) : (
+          <Text style={[styles.loadingText, { color: colors.subtext }]}>
+            Loading achievements...
+          </Text>
+        )}
 
         {/* Options Section */}
         <View style={styles.section}>
@@ -84,7 +114,17 @@ const ProfileScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           {/* Dark Mode Switch */}
-          <View style={[styles.option, { backgroundColor: colors.card, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+          <View
+            style={[
+              styles.option,
+              {
+                backgroundColor: colors.card,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              },
+            ]}
+          >
             <Text style={[styles.optionText, { color: colors.text }]}>🌙 Dark Mode</Text>
             <Switch
               value={isDark}
@@ -142,6 +182,11 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingText: {
+    textAlign: 'center',
+    fontSize: 14,
+    marginBottom: 10,
   },
 });
 
