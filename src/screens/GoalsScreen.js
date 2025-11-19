@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from './ThemeContext';
@@ -40,15 +40,15 @@ const GoalsScreen = ({ navigation }) => {
     }, [])
   );
 
-  useEffect(() => {
-    fetchGoalsAndProgress();
-  }, []);
-
   const fetchGoalsAndProgress = async () => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-      if (userDoc.exists() && userDoc.data().goals) {
-        setGoals(userDoc.data().goals);
+      try {
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists() && userDoc.data().goals) {
+          setGoals(prevDefaults => ({ ...prevDefaults, ...userDoc.data().goals }));
+        }
+      } catch (goalError) {
+        console.log('Could not fetch goals, using defaults:', goalError.message);
       }
       await calculateProgress();
     } catch (error) {
@@ -61,22 +61,36 @@ const GoalsScreen = ({ navigation }) => {
   const calculateProgress = async () => {
     try {
       const now = new Date();
-      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const oneWeekAgo = startOfWeek;
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const today = new Date().toISOString().split('T')[0];
 
       let workouts = [];
-      const workoutsQuery = query(
-        collection(db, 'workouts'),
-        where('userId', '==', auth.currentUser.uid)
-      );
-      const workoutsSnapshot = await getDocs(workoutsQuery);
-      workouts = workoutsSnapshot.docs.map(doc => doc.data());
+      try {
+        const workoutsQuery = query(
+          collection(db, 'workouts'),
+          where('userId', '==', auth.currentUser.uid),
+          where('createdAt', '>=', monthStart)
+        );
+        const workoutsSnapshot = await getDocs(workoutsQuery);
+        workouts = workoutsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          data.createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+          return data;
+        });
+      } catch (workoutError) {
+        console.log('Could not fetch workouts for progress calculation:', workoutError.message);
+      }
 
       const thisWeekWorkouts = workouts.filter(w => {
         const date = w.createdAt?.toDate?.() || new Date(w.createdAt);
         return date >= oneWeekAgo;
       });
+
       const weeklyWorkoutsCount = thisWeekWorkouts.length;
       const weeklyDurationCount = thisWeekWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0);
 
@@ -143,7 +157,7 @@ const GoalsScreen = ({ navigation }) => {
     }
   };
 
-  const getGoalIcon = goalType => {
+  const getGoalIcon = (goalType) => {
     switch (goalType) {
       case 'weeklyWorkouts': return '🏃‍♂️';
       case 'weeklyDuration': return '⏱️';
@@ -156,7 +170,7 @@ const GoalsScreen = ({ navigation }) => {
   const getProgressPercentage = goalType => {
     const goal = goals[goalType];
     const current = progress[goalType];
-    if (goal === 0) return 0;
+    if (!goal || goal === 0) return 0;
     return Math.min(Math.round((current / goal) * 100), 100);
   };
 

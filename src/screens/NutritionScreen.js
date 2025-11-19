@@ -52,7 +52,6 @@ const NutritionScreen = ({ navigation }) => {
       await fetchWeeklyHistory();
     } catch (error) {
       console.error('Error fetching nutrition data:', error);
-      Alert.alert('Error', 'Failed to load nutrition data');
     } finally {
       setLoading(false);
     }
@@ -164,7 +163,7 @@ const NutritionScreen = ({ navigation }) => {
             onPress={() => navigation.navigate('AddMeal', { mealType })}
           >
             <Text style={styles.quickMealIcon}>
-              {mealType === 'Breakfast' ? '🌅' : mealType === 'Lunch' ? '🥗' : mealType === 'Dinner' ? '🍽️' : '🎃'}
+              {mealType === 'Breakfast' ? '🌅' : mealType === 'Lunch' ? '🥗' : mealType === 'Dinner' ? '🍽️' : '🍎'}
             </Text>
             <Text style={[styles.quickMealText, { color: colors.text }]}>{mealType}</Text>
           </TouchableOpacity>

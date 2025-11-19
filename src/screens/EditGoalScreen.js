@@ -150,6 +150,7 @@ const EditGoalScreen = ({ navigation, route }) => {
           </Text>
         </View>
 
+        {/* Current Value Display */}
         <View
           style={[
             styles.currentValueContainer,
@@ -164,6 +165,7 @@ const EditGoalScreen = ({ navigation, route }) => {
           </Text>
         </View>
 
+        {/* Input Field */}
         <View style={styles.inputContainer}>
           <Text style={[styles.inputLabel, { color: colors.text }]}>New Goal Value</Text>
           <TextInput
@@ -185,6 +187,7 @@ const EditGoalScreen = ({ navigation, route }) => {
           />
         </View>
 
+        {/* Quick Suggestions */}
         <View style={styles.suggestionsContainer}>
           <Text style={[styles.suggestionsTitle, { color: colors.text }]}>
             Quick Select:
@@ -196,6 +199,7 @@ const EditGoalScreen = ({ navigation, route }) => {
           </View>
         </View>
 
+        {/* Goal Tips */}
         <View
           style={[
             styles.tipsContainer,
@@ -241,7 +245,7 @@ const EditGoalScreen = ({ navigation, route }) => {
                 • More if you exercise regularly
               </Text>
               <Text style={[styles.tipText, { color: colors.text }]}>
-                • Listen to your body’s thirst signals
+                • Listen to your body's thirst signals
               </Text>
             </>
           )}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -39,6 +40,9 @@ const WaterTrackerScreen = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
+
+      const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
+
       
       if (waterDoc.exists()) {
         setTodayWater(waterDoc.data().glasses || 0);
@@ -103,6 +107,9 @@ const WaterTrackerScreen = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
+
+      const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
+
       
       const newGlassCount = todayWater + 1;
       
@@ -130,6 +137,12 @@ const WaterTrackerScreen = () => {
       } else {
         const remaining = dailyGoal - newGlassCount;
         Alert.alert('Great job! 💧', `Glass added! ${remaining} more to reach your daily goal.`);
+
+        Alert.alert('Congratulations! 🎉', `You've reached your daily water goal of ${dailyGoal} glasses!`);
+      } else {
+        const remaining = dailyGoal - newGlassCount;
+        Alert.alert('Great job! 💧', `Glass added! ${remaining} more to reach your daily goal.`);
+
       }
     } catch (error) {
       console.error('Error adding water glass:', error);
@@ -142,7 +155,9 @@ const WaterTrackerScreen = () => {
     
     try {
       const today = new Date().toISOString().split('T')[0];
+
       const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
+
       
       const newGlassCount = todayWater - 1;
       
@@ -200,7 +215,10 @@ const WaterTrackerScreen = () => {
                 style={[
                   styles.bar, 
                   { 
+                    height: `${Math.min((day.glasses / dailyGoal) * 100, 100)}%`,
+
                     height: `${Math.min((day.glasses / dailyGoal) * 100, 100)}`%,
+
                     backgroundColor: day.glasses >= dailyGoal ? '#4CAF50' : '#2196F3'
                   }
                 ]} 
@@ -258,7 +276,10 @@ const WaterTrackerScreen = () => {
 
           <View style={styles.progressBarContainer}>
             <View 
+              style={[styles.progressBar, { width: `${getProgressPercentage()}%` }]} 
+
               style={[styles.progressBar, { width: `${getProgressPercentage()}`% }]} 
+
             />
           </View>
 
