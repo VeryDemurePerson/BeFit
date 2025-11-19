@@ -1,149 +1,263 @@
-// src/screens/GoalsScreen.js
-import React, { useEffect, useState } from 'react';
+// src/screens/EditGoalScreen.js
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
+  TextInput,
   Alert,
+  ScrollView,
 } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { useTheme } from './ThemeContext';
 import { lightTheme, darkTheme } from './themes';
 
-const GoalsScreen = ({ navigation }) => {
+const EditGoalScreen = ({ navigation, route }) => {
+  const { goalType, currentValue } = route.params;
+  const [newValue, setNewValue] = useState(currentValue.toString());
+  const [loading, setLoading] = useState(false);
   const { theme } = useTheme();
   const colors = theme === 'light' ? lightTheme : darkTheme;
-  const [goals, setGoals] = useState({});
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchGoals = async () => {
-      try {
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setGoals(userData.goals || {});
-        }
-      } catch (error) {
-        Alert.alert('Error', 'Failed to fetch goals');
-        console.error(error);
-      } finally {
-        setLoading(false);
+  const getGoalTitle = type =>
+    ({
+      weeklyWorkouts: 'Weekly Workouts',
+      weeklyDuration: 'Weekly Minutes',
+      dailyWater: 'Daily Water (glasses)',
+      monthlyWorkouts: 'Monthly Workouts',
+    }[type] || '');
+
+  const getGoalIcon = type =>
+    ({
+      weeklyWorkouts: '🏋️‍♂️',
+      weeklyDuration: '⏱️',
+      dailyWater: '💧',
+      monthlyWorkouts: '📅',
+    }[type] || '🎯');
+
+  const getGoalHint = type =>
+    ({
+      weeklyWorkouts: 'How many workouts per week?',
+      weeklyDuration: 'How many minutes per week?',
+      dailyWater: 'How many glasses per day?',
+      monthlyWorkouts: 'How many workouts per month?',
+    }[type] || '');
+
+  const getSuggestions = type =>
+    ({
+      weeklyWorkouts: ['2', '3', '4', '5'],
+      weeklyDuration: ['90', '120', '150', '180'],
+      dailyWater: ['6', '8', '10', '12'],
+      monthlyWorkouts: ['8', '12', '16', '20'],
+    }[type] || []);
+
+  const updateGoal = async () => {
+    if (!newValue || isNaN(parseInt(newValue)) || parseInt(newValue) < 1) {
+      Alert.alert('Error', 'Please enter a valid number greater than 0');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (userDoc.exists()) {
+        const currentGoals = userDoc.data().goals || {};
+        await updateDoc(userRef, {
+          goals: { ...currentGoals, [goalType]: parseInt(newValue) },
+        });
+      } else {
+        await setDoc(userRef, {
+          goals: { [goalType]: parseInt(newValue) },
+          email: auth.currentUser.email,
+          createdAt: new Date(),
+        });
       }
-    };
-    fetchGoals();
-  }, []);
 
-  const SectionCard = ({ title, icon, type, currentValue, description }) => (
-    <View
-      style={[
-        styles.section,
-        { backgroundColor: colors.card, borderColor: colors.border },
-      ]}
-    >
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionIcon]}>{icon}</Text>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
-      </View>
+      Alert.alert('Success', 'Goal updated successfully!', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error) {
+      Alert.alert('Error', `Failed to update goal: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      <Text style={[styles.sectionDesc, { color: colors.subtext }]}>{description}</Text>
-
-      <View style={styles.valueRow}>
-        <Text style={[styles.sectionLabel, { color: colors.text }]}>Current Goal:</Text>
-        <Text style={[styles.sectionValue, { color: colors.accent }]}>
-          {currentValue ?? '-'}
-        </Text>
-      </View>
-
-      <TouchableOpacity
-        style={[styles.editButton, { backgroundColor: colors.accent }]}
-        onPress={() =>
-          navigation.navigate('EditGoal', {
-            goalType: type,
-            currentValue: currentValue || 0,
-          })
-        }
-      >
-        <Text style={styles.editButtonText}>Edit Goal</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  if (loading) {
+  const SuggestionButton = ({ value }) => {
+    const active = newValue === value;
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={{ color: colors.text, marginTop: 10 }}>Loading goals...</Text>
-        </View>
-      </SafeAreaView>
+      <TouchableOpacity
+        style={[
+          styles.suggestionButton,
+          {
+            backgroundColor: active ? colors.accent : colors.card,
+            borderColor: active ? colors.accent : colors.border,
+          },
+        ]}
+        onPress={() => setNewValue(value)}
+      >
+        <Text
+          style={[
+            styles.suggestionText,
+            { color: active ? colors.inverseText : colors.text },
+          ]}
+        >
+          {value}
+        </Text>
+      </TouchableOpacity>
     );
-  }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={[styles.mainTitle, { color: colors.text }]}>Your Goals</Text>
+      {/* Header */}
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
+        ]}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: colors.text }]}>Edit Goal</Text>
+        <TouchableOpacity onPress={updateGoal} disabled={loading}>
+          <Text
+            style={[
+              styles.saveButton,
+              { color: colors.accent, opacity: loading ? 0.5 : 1 },
+            ]}
+          >
+            {loading ? 'Saving...' : 'Save'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* Weekly Workouts */}
-        <SectionCard
-          title="Weekly Workouts"
-          icon="🏋️‍♂️"
-          type="weeklyWorkouts"
-          currentValue={goals.weeklyWorkouts}
-          description="Set how many workouts you want to complete each week."
-        />
+      {/* Content */}
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.goalInfoContainer}>
+          <Text style={styles.goalIcon}>{getGoalIcon(goalType)}</Text>
+          <Text style={[styles.goalTitle, { color: colors.text }]}>
+            {getGoalTitle(goalType)}
+          </Text>
+          <Text style={[styles.goalHint, { color: colors.subtext }]}>
+            {getGoalHint(goalType)}
+          </Text>
+        </View>
 
-        {/* Weekly Duration */}
-        <SectionCard
-          title="Weekly Minutes"
-          icon="⏱️"
-          type="weeklyDuration"
-          currentValue={goals.weeklyDuration}
-          description="Track total minutes of exercise per week (cardio, strength, etc)."
-        />
-
-        {/* Daily Water */}
-        <SectionCard
-          title="Daily Water (glasses)"
-          icon="💧"
-          type="dailyWater"
-          currentValue={goals.dailyWater}
-          description="Stay hydrated! Set how many glasses of water you aim to drink per day."
-        />
-
-        {/* Monthly Workouts */}
-        <SectionCard
-          title="Monthly Workouts"
-          icon="📅"
-          type="monthlyWorkouts"
-          currentValue={goals.monthlyWorkouts}
-          description="Track how many total workouts you want to complete in a month."
-        />
-
-        {/* Motivation Tips */}
         <View
           style={[
-            styles.tipsContainer,
+            styles.currentValueContainer,
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
+          <Text style={[styles.currentValueLabel, { color: colors.subtext }]}>
+            Current Goal:
+          </Text>
+          <Text style={[styles.currentValue, { color: colors.accent }]}>
+            {currentValue}
+          </Text>
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={[styles.inputLabel, { color: colors.text }]}>New Goal Value</Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
+            value={newValue}
+            onChangeText={setNewValue}
+            keyboardType="numeric"
+            placeholder="Enter goal value"
+            placeholderTextColor={colors.subtext}
+            returnKeyType="done"
+            autoFocus
+          />
+        </View>
+
+        <View style={styles.suggestionsContainer}>
+          <Text style={[styles.suggestionsTitle, { color: colors.text }]}>
+            Quick Select:
+          </Text>
+          <View style={styles.suggestionsGrid}>
+            {getSuggestions(goalType).map(v => (
+              <SuggestionButton key={v} value={v} />
+            ))}
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.tipsContainer,
+            {
+              backgroundColor: theme === 'light' ? '#E3F2FD' : '#102A43',
+              borderColor: colors.border,
+            },
+          ]}
+        >
           <Text style={[styles.tipsTitle, { color: colors.accent }]}>💡 Tips</Text>
-          <Text style={[styles.tipText, { color: colors.text }]}>
-            • Keep your goals realistic and achievable.
-          </Text>
-          <Text style={[styles.tipText, { color: colors.text }]}>
-            • Adjust them as you improve each week.
-          </Text>
-          <Text style={[styles.tipText, { color: colors.text }]}>
-            • Consistency beats intensity — small steps add up!
-          </Text>
+          {goalType === 'weeklyWorkouts' && (
+            <>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • Beginners: Start with 2–3 workouts per week
+              </Text>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • Intermediate: Aim for 3–4 workouts per week
+              </Text>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • Advanced: 4–5 workouts per week
+              </Text>
+            </>
+          )}
+          {goalType === 'weeklyDuration' && (
+            <>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • WHO recommends 150 minutes per week
+              </Text>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • Break it down: 30 min × 5 days
+              </Text>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • Include both cardio and strength training
+              </Text>
+            </>
+          )}
+          {goalType === 'dailyWater' && (
+            <>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • General guideline: 8 glasses (8oz each)
+              </Text>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • More if you exercise regularly
+              </Text>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • Listen to your body’s thirst signals
+              </Text>
+            </>
+          )}
+          {goalType === 'monthlyWorkouts' && (
+            <>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • Consistency is key for progress
+              </Text>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • Allow rest days for recovery
+              </Text>
+              <Text style={[styles.tipText, { color: colors.text }]}>
+                • Gradually increase as you build habits
+              </Text>
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -152,46 +266,62 @@ const GoalsScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 20 },
-  mainTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  section: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 2,
-  },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  sectionIcon: { fontSize: 36, marginRight: 10 },
-  sectionTitle: { fontSize: 20, fontWeight: '700' },
-  sectionDesc: { fontSize: 14, marginBottom: 10 },
-  valueRow: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
   },
-  sectionLabel: { fontSize: 16, fontWeight: '600' },
-  sectionValue: { fontSize: 20, fontWeight: 'bold' },
-  editButton: {
+  cancelButton: { fontSize: 16 },
+  title: { fontSize: 18, fontWeight: 'bold' },
+  saveButton: { fontSize: 16, fontWeight: '600' },
+  content: { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  goalInfoContainer: { alignItems: 'center', marginBottom: 30 },
+  goalIcon: { fontSize: 48, marginBottom: 15 },
+  goalTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
+  goalHint: { fontSize: 16, textAlign: 'center' },
+  currentValueContainer: {
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+  },
+  currentValueLabel: { fontSize: 14, marginBottom: 5 },
+  currentValue: { fontSize: 32, fontWeight: 'bold' },
+  inputContainer: { marginBottom: 30 },
+  inputLabel: { fontSize: 16, fontWeight: '600', marginBottom: 10 },
+  input: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     borderRadius: 8,
-    paddingVertical: 10,
+    fontSize: 18,
+    borderWidth: 1,
+    textAlign: 'center',
+  },
+  suggestionsContainer: { marginBottom: 30 },
+  suggestionsTitle: { fontSize: 16, fontWeight: '600', marginBottom: 15 },
+  suggestionsGrid: { flexDirection: 'row', justifyContent: 'space-between' },
+  suggestionButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    marginHorizontal: 5,
     alignItems: 'center',
   },
-  editButtonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  suggestionText: { fontSize: 16, fontWeight: '600' },
   tipsContainer: {
     padding: 20,
     borderRadius: 12,
     borderWidth: 1,
-    marginTop: 10,
   },
-  tipsTitle: { fontSize: 18, fontWeight: '700', marginBottom: 10 },
-  tipText: { fontSize: 14, lineHeight: 20 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  tipsTitle: { fontSize: 16, fontWeight: '600', marginBottom: 15 },
+  tipText: { fontSize: 14, marginBottom: 8, lineHeight: 20 },
 });
 
-export default GoalsScreen;
+export default EditGoalScreen;
