@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -7,7 +6,7 @@ import { View, ActivityIndicator, Text } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './src/services/firebase';
 
-
+// Import screens
 import LoginScreen from './src/screens/LoginScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -21,11 +20,14 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import NutritionScreen from './src/screens/NutritionScreen';
 import AddMealScreen from './src/screens/AddMealScreen';
+import ChatbotScreen from './src/screens/ChatbotScreen'; // AI Chatbot
+import FloatingChatButton from './src/components/FloatingChatButton'; // Floating button
+import { ThemeProvider } from './src/screens/ThemeContext'; // Theme provider
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-
+// Tab icon component
 const TabIcon = ({ name, focused, color, size }) => {
   const getIcon = () => {
     switch (name) {
@@ -50,7 +52,7 @@ const TabIcon = ({ name, focused, color, size }) => {
   );
 };
 
-
+// Auth Stack
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -60,7 +62,7 @@ function AuthStack() {
   );
 }
 
-// Workout Stack (Workout list + Add/Edit workout)
+// Workout Stack
 function WorkoutStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -85,7 +87,7 @@ function WorkoutStack() {
   );
 }
 
-// Goals Stack (Goals list + Edit goal)
+// Goals Stack
 function GoalsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -136,74 +138,109 @@ function NutritionStack() {
   );
 }
 
-// Main App Tabs (after login) - FIXED VERSION
+// Main App Tabs (NO AI COACH TAB - using floating button instead)
 function MainTabs() {
+  const [chatVisible, setChatVisible] = React.useState(false);
+
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => (
-          <TabIcon name={route.name} focused={focused} color={color} size={size} />
-        ),
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E5EA',
-          height: 60,
-          paddingBottom: 5,
-          paddingTop: 5,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '500',
-        },
-      })}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
+    <>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => (
+            <TabIcon name={route.name} focused={focused} color={color} size={size} />
+          ),
+          tabBarActiveTintColor: '#007AFF',
+          tabBarInactiveTintColor: '#8E8E93',
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: '#ffffff',
+            borderTopWidth: 1,
+            borderTopColor: '#E5E5EA',
+            height: 60,
+            paddingBottom: 5,
+            paddingTop: 5,
+          },
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontWeight: '500',
+          },
+        })}
+      >
+        <Tab.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            tabBarLabel: 'Home',
+          }}
+        />
+        <Tab.Screen
+          name="Workout"
+          component={WorkoutStack}
+          options={{
+            tabBarLabel: 'Workout',
+          }}
+        />
+        <Tab.Screen
+          name="Goals"
+          component={GoalsStack}
+          options={{
+            tabBarLabel: 'Goals',
+          }}
+        />
+        <Tab.Screen
+          name="Progress"
+          component={ProgressScreen}
+          options={{
+            tabBarLabel: 'Progress',
+          }}
+        />
+        <Tab.Screen
+          name="Nutrition"
+          component={NutritionStack}
+          options={{
+            tabBarLabel: 'Nutrition',
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileStack}
+          options={{
+            tabBarLabel: 'Profile',
+          }}
+        />
+      </Tab.Navigator>
+
+      {/* Floating AI Chat Button */}
+      <FloatingChatButton onPress={() => setChatVisible(true)} />
+
+      {/* AI Chat Modal */}
+      {chatVisible && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <ChatbotScreen 
+            navigation={{ 
+              goBack: () => setChatVisible(false) 
+            }} 
+          />
+        </View>
+      )}
+    </>
+  );
+}
+
+// Root Navigator with Chatbot as modal
+function RootNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen 
+        name="Chatbot" 
+        component={ChatbotScreen}
         options={{
-          tabBarLabel: 'Home',
+          presentation: 'modal',
+          headerShown: false,
         }}
       />
-      <Tab.Screen
-        name="Workout"
-        component={WorkoutStack}
-        options={{
-          tabBarLabel: 'Workout',
-        }}
-      />
-      <Tab.Screen
-        name="Goals"
-        component={GoalsStack}
-        options={{
-          tabBarLabel: 'Goals',
-        }}
-      />
-      <Tab.Screen
-        name="Progress"
-        component={ProgressScreen}
-        options={{
-          tabBarLabel: 'Progress',
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileStack}
-        options={{
-          tabBarLabel: 'Profile',
-        }}
-      />
-      <Tab.Screen
-        name="Nutrition"
-        component={NutritionStack}
-        options={{
-          tabBarLabel: 'Nutrition',
-        }}
-      />
-    </Tab.Navigator>
+    </Stack.Navigator>
   );
 }
 
@@ -229,8 +266,10 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      {user ? <MainTabs /> : <AuthStack />}
-    </NavigationContainer>
+    <ThemeProvider>
+      <NavigationContainer>
+        {user ? <RootNavigator /> : <AuthStack />}
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }
