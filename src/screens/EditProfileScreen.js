@@ -213,8 +213,8 @@ const EditGoalScreen = ({ navigation, route }) => {
 >>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
       ]);
     } catch (error) {
-      Alert.alert('Error', `Failed to update goal: ${error.message}`);
-      console.error('Error updating goal:', error);
+      Alert.alert("Error", `Failed to update goal: ${error.message}`);
+      console.error("Error updating goal:", error);
     } finally {
       setLoading(false);
     }

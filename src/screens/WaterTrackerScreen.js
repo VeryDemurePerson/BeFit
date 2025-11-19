@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 
-=======
->>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -42,11 +39,10 @@ const WaterTrackerScreen = () => {
   const fetchTodayWater = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-<<<<<<< HEAD
       const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
-=======
-      const waterDoc = await getDoc(doc(db, 'water_intake', ${auth.currentUser.uid}_${today}));
->>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
+
+      const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
+
       
       if (waterDoc.exists()) {
         setTodayWater(waterDoc.data().glasses || 0);
@@ -110,11 +106,10 @@ const WaterTrackerScreen = () => {
   const addWaterGlass = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-<<<<<<< HEAD
       const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
-=======
-      const waterDocRef = doc(db, 'water_intake', ${auth.currentUser.uid}_${today});
->>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
+
+      const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
+
       
       const newGlassCount = todayWater + 1;
       
@@ -138,17 +133,16 @@ const WaterTrackerScreen = () => {
       
       // Show encouraging message
       if (newGlassCount >= dailyGoal) {
-<<<<<<< HEAD
         Alert.alert('Congratulations! 🎉', `You've reached your daily water goal of ${dailyGoal} glasses!`);
       } else {
         const remaining = dailyGoal - newGlassCount;
         Alert.alert('Great job! 💧', `Glass added! ${remaining} more to reach your daily goal.`);
-=======
-        Alert.alert('Congratulations! 🎉', You've reached your daily water goal of ${dailyGoal} glasses!);
+
+        Alert.alert('Congratulations! 🎉', `You've reached your daily water goal of ${dailyGoal} glasses!`);
       } else {
         const remaining = dailyGoal - newGlassCount;
-        Alert.alert('Great job! 💧', Glass added! ${remaining} more to reach your daily goal.);
->>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
+        Alert.alert('Great job! 💧', `Glass added! ${remaining} more to reach your daily goal.`);
+
       }
     } catch (error) {
       console.error('Error adding water glass:', error);
@@ -161,11 +155,9 @@ const WaterTrackerScreen = () => {
     
     try {
       const today = new Date().toISOString().split('T')[0];
-<<<<<<< HEAD
+
       const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
-=======
-      const waterDocRef = doc(db, 'water_intake', ${auth.currentUser.uid}_${today});
->>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
+
       
       const newGlassCount = todayWater - 1;
       
@@ -223,11 +215,10 @@ const WaterTrackerScreen = () => {
                 style={[
                   styles.bar, 
                   { 
-<<<<<<< HEAD
                     height: `${Math.min((day.glasses / dailyGoal) * 100, 100)}%`,
-=======
-                    height: ${Math.min((day.glasses / dailyGoal) * 100, 100)}%,
->>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
+
+                    height: `${Math.min((day.glasses / dailyGoal) * 100, 100)}`%,
+
                     backgroundColor: day.glasses >= dailyGoal ? '#4CAF50' : '#2196F3'
                   }
                 ]} 
@@ -247,6 +238,7 @@ const WaterTrackerScreen = () => {
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statSubtitle}>{subtitle}</Text>
     </View>
+    
   );
 
   if (loading) {
@@ -284,11 +276,10 @@ const WaterTrackerScreen = () => {
 
           <View style={styles.progressBarContainer}>
             <View 
-<<<<<<< HEAD
               style={[styles.progressBar, { width: `${getProgressPercentage()}%` }]} 
-=======
-              style={[styles.progressBar, { width: ${getProgressPercentage()}% }]} 
->>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
+
+              style={[styles.progressBar, { width: `${getProgressPercentage()}`% }]} 
+
             />
           </View>
 
