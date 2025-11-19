@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -10,7 +13,11 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+<<<<<<< HEAD
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+=======
+import { doc, getDoc, collection } from 'firebase/firestore';
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 import { auth, db } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -29,6 +36,7 @@ const NutritionScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+<<<<<<< HEAD
 
   const dailyTargets = {
     calories: 2000, // Moderate baseline
@@ -36,6 +44,15 @@ const NutritionScreen = ({ navigation }) => {
     carbs: 250,     // grams  
     fat: 65,        // grams
     fiber: 25       // grams
+=======
+  // Daily targets - these could be made user-configurable
+  const dailyTargets = {
+    calories: 2000,
+    protein: 150,
+    carbs: 250,
+    fat: 65,
+    fiber: 25
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
   };
 
   useFocusEffect(
@@ -60,6 +77,10 @@ const NutritionScreen = ({ navigation }) => {
       await fetchWeeklyHistory();
     } catch (error) {
       console.error('Error fetching nutrition data:', error);
+<<<<<<< HEAD
+=======
+      Alert.alert('Error', 'Failed to load nutrition data');
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
     } finally {
       setLoading(false);
     }
@@ -188,7 +209,11 @@ const NutritionScreen = ({ navigation }) => {
             <Text style={styles.quickMealIcon}>
               {mealType === 'Breakfast' ? '🌅' : 
                mealType === 'Lunch' ? '🥗' :
+<<<<<<< HEAD
                mealType === 'Dinner' ? '🍽️' : '🍎'}
+=======
+               mealType === 'Dinner' ? '🍽️' : '🎃'}
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
             </Text>
             <Text style={styles.quickMealText}>{mealType}</Text>
           </TouchableOpacity>

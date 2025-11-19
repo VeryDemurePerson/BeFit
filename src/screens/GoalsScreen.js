@@ -8,7 +8,11 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+<<<<<<< HEAD
 import { doc, getDoc, setDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore'; // Thêm updateDoc
+=======
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 import { auth, db } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -27,12 +31,15 @@ const GoalsScreen = ({ navigation }) => {
   });
   const [loading, setLoading] = useState(true);
 
+<<<<<<< HEAD
   // Các state cho modal (dù bạn đã xóa modal, các hàm gọi chúng vẫn còn)
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
   const [newValue, setNewValue] = useState('');
 
 
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
   useFocusEffect(
     React.useCallback(() => {
       fetchGoalsAndProgress();
@@ -46,7 +53,7 @@ const GoalsScreen = ({ navigation }) => {
 
   const fetchGoalsAndProgress = async () => {
     try {
-     
+      // Fetch user goals
       try {
         const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
         if (userDoc.exists() && userDoc.data().goals) {
@@ -61,6 +68,7 @@ const GoalsScreen = ({ navigation }) => {
       await calculateProgress();
     } catch (error) {
       console.error('Error fetching goals:', error);
+      Alert.alert('Error', 'Failed to load goals data');
     } finally {
       setLoading(false);
     }
@@ -78,7 +86,7 @@ const GoalsScreen = ({ navigation }) => {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const today = new Date().toISOString().split('T')[0];
 
-     
+      // Fetch workouts
       let workouts = [];
       try {
         const workoutsQuery = query(
@@ -97,16 +105,32 @@ const GoalsScreen = ({ navigation }) => {
         console.log('Could not fetch workouts for progress calculation:', workoutError.message);
       }
 
+<<<<<<< HEAD
    
       const thisWeekWorkouts = workouts.filter(w => w.createdAt >= oneWeekAgo);
+=======
+      // Weekly workouts
+      const thisWeekWorkouts = workouts.filter(w => {
+        const date = w.createdAt?.toDate?.() || new Date(w.createdAt);
+        return date >= oneWeekAgo;
+      });
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 
       const weeklyWorkoutsCount = thisWeekWorkouts.length;
       const weeklyDurationCount = thisWeekWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0);
 
+<<<<<<< HEAD
     
       const thisMonthWorkouts = workouts.filter(w => w.createdAt >= monthStart);
+=======
+      // Monthly workouts
+      const thisMonthWorkouts = workouts.filter(w => {
+        const date = w.createdAt?.toDate?.() || new Date(w.createdAt);
+        return date >= monthStart;
+      });
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 
-     
+      // Daily water
       let dailyWaterCount = 0;
       try {
         const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
@@ -126,37 +150,6 @@ const GoalsScreen = ({ navigation }) => {
     }
   };
 
-  const updateGoal = async (goalType, value) => {
-    try {
-      const newGoals = { ...goals, [goalType]: parseInt(value) };
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      
-      
-      const userDoc = await getDoc(userRef);
-      
-      if (userDoc.exists()) {
-        
-        await updateDoc(userRef, {
-          goals: newGoals
-        });
-      } else {
-        
-        await setDoc(userRef, {
-          goals: newGoals,
-          email: auth.currentUser.email,
-          createdAt: new Date()
-        });
-      }
-      
-      setGoals(newGoals);
-      setShowEditModal(false);
-      Alert.alert('Success', 'Goal updated successfully!');
-    } catch (error) {
-      Alert.alert('Error', `Failed to update goal: ${error.message}`);
-      console.error('Error updating goal:', error);
-    }
-  };
-
   const addWaterGlass = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -172,7 +165,6 @@ const GoalsScreen = ({ navigation }) => {
         updatedAt: new Date()
       }, { merge: true });
       
-     
       setProgress(prev => ({
         ...prev,
         dailyWater: currentGlasses + 1
@@ -185,6 +177,7 @@ const GoalsScreen = ({ navigation }) => {
     }
   };
 
+<<<<<<< HEAD
   // Hàm này đã tồn tại nhưng không được dùng vì modal đã bị xóa
   const openEditModal = (goalType) => {
     setEditingGoal(goalType);
@@ -192,6 +185,8 @@ const GoalsScreen = ({ navigation }) => {
     setShowEditModal(true);
   };
 
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
   const getGoalTitle = (goalType) => {
     switch (goalType) {
       case 'weeklyWorkouts': return 'Weekly Workouts';
@@ -205,11 +200,19 @@ const GoalsScreen = ({ navigation }) => {
   const getGoalIcon = (goalType) => {
     // SỬA LỖI: Thay thế các ký tự vỡ bằng emoji thật
     switch (goalType) {
+<<<<<<< HEAD
       case 'weeklyWorkouts': return '🏃‍♂️'; // Trước đây là: 'ðŸƒâ€â™‚ï¸'
       case 'weeklyDuration': return '⏱️'; // Trước đây là: 'â±ï¸'
       case 'dailyWater': return '💧'; // Trước đây là: 'ðŸ’§'
       case 'monthlyWorkouts': return '📅'; // Trước đây là: 'ðŸ“…'
       default: return '🎯'; // Trước đây là: 'ðŸŽ¯'
+=======
+      case 'weeklyWorkouts': return '🏃‍♂️';
+      case 'weeklyDuration': return '⏱️';
+      case 'dailyWater': return '💧';
+      case 'monthlyWorkouts': return '📅';
+      default: return '🎯';
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
     }
   };
 
@@ -263,7 +266,10 @@ const GoalsScreen = ({ navigation }) => {
         </View>
         
         {isCompleted && (
+<<<<<<< HEAD
           // SỬA LỖI: Thay thế ký tự vỡ bằng emoji thật
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
           <Text style={styles.completedMessage}>🎉 Goal Completed!</Text>
         )}
       </View>
@@ -278,7 +284,10 @@ const GoalsScreen = ({ navigation }) => {
           style={styles.actionButton}
           onPress={() => navigation.navigate('Workout', { screen: 'AddWorkout' })}
         >
+<<<<<<< HEAD
           {/* SỬA LỖI: Thay thế ký tự vỡ bằng emoji thật */}
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
           <Text style={styles.actionIcon}>💪</Text>
           <Text style={styles.actionText}>Add Workout</Text>
         </TouchableOpacity>
@@ -287,7 +296,10 @@ const GoalsScreen = ({ navigation }) => {
           style={styles.actionButton}
           onPress={addWaterGlass}
         >
+<<<<<<< HEAD
           {/* SỬA LỖI: Thay thế ký tự vỡ bằng emoji thật */}
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
           <Text style={styles.actionIcon}>💧</Text>
           <Text style={styles.actionText}>Drink Water</Text>
         </TouchableOpacity>
@@ -296,7 +308,10 @@ const GoalsScreen = ({ navigation }) => {
           style={styles.actionButton}
           onPress={() => navigation.navigate('Progress')}
         >
+<<<<<<< HEAD
           {/* SỬA LỖI: Thay thế ký tự vỡ bằng emoji thật */}
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
           <Text style={styles.actionIcon}>📊</Text>
           <Text style={styles.actionText}>View Progress</Text>
         </TouchableOpacity>
@@ -304,12 +319,15 @@ const GoalsScreen = ({ navigation }) => {
     </View>
   );
 
+<<<<<<< HEAD
   // Tệp của bạn có tham chiếu đến EditGoalModal nhưng nó trả về null
   // Điều này là bình thường nếu bạn đã chuyển nó sang một màn hình riêng
   const EditGoalModal = () => {
     return null;
   };
 
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -532,6 +550,7 @@ const styles = StyleSheet.create({
     color: 'white',
     opacity: 0.8,
   },
+<<<<<<< HEAD
   
   // Bạn có các style này nhưng không có modal
   // Tôi sẽ giữ chúng lại phòng trường hợp bạn dùng ở đâu đó
@@ -595,6 +614,8 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 });
 
 export default GoalsScreen;

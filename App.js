@@ -24,10 +24,14 @@ import ChatbotScreen from './src/screens/ChatbotScreen'; // AI Chatbot
 import FloatingChatButton from './src/components/FloatingChatButton'; // Floating button
 import { ThemeProvider } from './src/screens/ThemeContext'; // Theme provider
 
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+<<<<<<< HEAD
 // Tab icon component
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 const TabIcon = ({ name, focused, color, size }) => {
   const getIcon = () => {
     switch (name) {
@@ -37,7 +41,7 @@ const TabIcon = ({ name, focused, color, size }) => {
       case 'Progress': return '📊';
       case 'Profile': return '👤';
       case 'Nutrition': return '🍎';
-      default: return '•';
+      default: return '.';
     }
   };
 
@@ -138,7 +142,13 @@ function NutritionStack() {
   );
 }
 
+<<<<<<< HEAD
 // Main App Tabs (NO AI COACH TAB - using floating button instead)
+=======
+
+
+// Main App Tabs (after login) - FIXED VERSION
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 function MainTabs() {
   const [chatVisible, setChatVisible] = React.useState(false);
 
@@ -240,7 +250,48 @@ function RootNavigator() {
           headerShown: false,
         }}
       />
+<<<<<<< HEAD
     </Stack.Navigator>
+=======
+      <Tab.Screen
+        name="Workout"
+        component={WorkoutStack}
+        options={{
+          tabBarLabel: 'Workout',
+        }}
+      />
+      <Tab.Screen
+        name="Goals"
+        component={GoalsStack}
+        options={{
+          tabBarLabel: 'Goals',
+        }}
+      />
+      <Tab.Screen
+        name="Progress"
+        component={ProgressScreen}
+        options={{
+          tabBarLabel: 'Progress',
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStack}
+        options={{
+          tabBarLabel: 'Profile',
+        }}
+      />
+      <Tab.Screen
+        name="Nutrition"
+        component={NutritionStack}
+        options={{
+          tabBarLabel: 'Nutrition',
+        }}
+      />
+
+      
+    </Tab.Navigator>
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
   );
 }
 

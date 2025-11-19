@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 // src/screens/EditGoalScreen.js
+=======
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 import React, { useState } from 'react';
 import {
   View,
@@ -12,12 +15,20 @@ import {
 } from 'react-native';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 const EditGoalScreen = ({ navigation, route }) => {
   const { goalType, currentValue } = route.params;
   const [newValue, setNewValue] = useState(currentValue.toString());
   const [loading, setLoading] = useState(false);
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
   const getGoalTitle = (goalType) => {
     switch (goalType) {
       case 'weeklyWorkouts': return 'Weekly Workouts';
@@ -27,6 +38,7 @@ const EditGoalScreen = ({ navigation, route }) => {
       default: return '';
     }
   };
+<<<<<<< HEAD
 
   const getGoalIcon = (goalType) => {
     // SỬA LỖI: Thay thế các ký tự vỡ bằng emoji thật
@@ -39,6 +51,19 @@ const EditGoalScreen = ({ navigation, route }) => {
     }
   };
 
+=======
+ 
+  const getGoalIcon = (goalType) => {
+    switch (goalType) {
+      case 'weeklyWorkouts': return 'ðŸƒâ€â™‚ï¸';
+      case 'weeklyDuration': return 'â±ï¸';
+      case 'dailyWater': return 'ðŸ’§';
+      case 'monthlyWorkouts': return 'ðŸ“…';
+      default: return 'ðŸŽ¯';
+    }
+  };
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
   const getGoalHint = (goalType) => {
     switch (goalType) {
       case 'weeklyWorkouts': return 'How many workouts per week?';
@@ -48,7 +73,11 @@ const EditGoalScreen = ({ navigation, route }) => {
       default: return '';
     }
   };
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
   const getSuggestions = (goalType) => {
     switch (goalType) {
       case 'weeklyWorkouts': return ['2', '3', '4', '5'];
@@ -58,13 +87,21 @@ const EditGoalScreen = ({ navigation, route }) => {
       default: return [];
     }
   };
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
   const updateGoal = async () => {
     if (!newValue || isNaN(parseInt(newValue)) || parseInt(newValue) < 1) {
       Alert.alert('Error', 'Please enter a valid number greater than 0');
       return;
     }
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
     setLoading(true);
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
@@ -105,9 +142,15 @@ const EditGoalScreen = ({ navigation, route }) => {
       setLoading(false);
     }
   };
+<<<<<<< HEAD
 
   const SuggestionButton = ({ value }) => (
     <TouchableOpacity 
+=======
+ 
+  const SuggestionButton = ({ value }) => (
+    <TouchableOpacity
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
       style={[styles.suggestionButton, newValue === value && styles.suggestionButtonActive]}
       onPress={() => setNewValue(value)}
     >
@@ -116,7 +159,11 @@ const EditGoalScreen = ({ navigation, route }) => {
       </Text>
     </TouchableOpacity>
   );
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -131,7 +178,11 @@ const EditGoalScreen = ({ navigation, route }) => {
           </Text>
         </TouchableOpacity>
       </View>
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
       {/* Content */}
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {/* Goal Info */}
@@ -140,13 +191,21 @@ const EditGoalScreen = ({ navigation, route }) => {
           <Text style={styles.goalTitle}>{getGoalTitle(goalType)}</Text>
           <Text style={styles.goalHint}>{getGoalHint(goalType)}</Text>
         </View>
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
         {/* Current Value Display */}
         <View style={styles.currentValueContainer}>
           <Text style={styles.currentValueLabel}>Current Goal:</Text>
           <Text style={styles.currentValue}>{currentValue}</Text>
         </View>
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
         {/* Input Field */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>New Goal Value</Text>
@@ -160,7 +219,11 @@ const EditGoalScreen = ({ navigation, route }) => {
             autoFocus={true}
           />
         </View>
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
         {/* Quick Suggestions */}
         <View style={styles.suggestionsContainer}>
           <Text style={styles.suggestionsTitle}>Quick Select:</Text>
@@ -170,6 +233,7 @@ const EditGoalScreen = ({ navigation, route }) => {
             ))}
           </View>
         </View>
+<<<<<<< HEAD
 
         {/* Goal Tips */}
         <View style={styles.tipsContainer}>
@@ -182,27 +246,56 @@ const EditGoalScreen = ({ navigation, route }) => {
               <Text style={styles.tipText}>• Beginners: Start with 2-3 workouts per week</Text>
               <Text style={styles.tipText}>• Intermediate: Aim for 3-4 workouts per week</Text>
               <Text style={styles.tipText}>• Advanced: 4-5 workouts per week</Text>
+=======
+ 
+        {/* Goal Tips */}
+        <View style={styles.tipsContainer}>
+          <Text style={styles.tipsTitle}>ðŸ’¡ Tips</Text>
+          {goalType === 'weeklyWorkouts' && (
+            <>
+              <Text style={styles.tipText}>â€¢ Beginners: Start with 2-3 workouts per week</Text>
+              <Text style={styles.tipText}>â€¢ Intermediate: Aim for 3-4 workouts per week</Text>
+              <Text style={styles.tipText}>â€¢ Advanced: 4-5 workouts per week</Text>
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
             </>
           )}
           {goalType === 'weeklyDuration' && (
             <>
+<<<<<<< HEAD
               <Text style={styles.tipText}>• WHO recommends 150 minutes per week</Text>
               <Text style={styles.tipText}>• Break it down: 30 min x 5 days</Text>
               <Text style={styles.tipText}>• Include both cardio and strength training</Text>
+=======
+              <Text style={styles.tipText}>â€¢ WHO recommends 150 minutes per week</Text>
+              <Text style={styles.tipText}>â€¢ Break it down: 30 min x 5 days</Text>
+              <Text style={styles.tipText}>â€¢ Include both cardio and strength training</Text>
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
             </>
           )}
           {goalType === 'dailyWater' && (
             <>
+<<<<<<< HEAD
               <Text style={styles.tipText}>• General guideline: 8 glasses (8oz each)</Text>
               <Text style={styles.tipText}>• More if you exercise regularly</Text>
               <Text style={styles.tipText}>• Listen to your body's thirst signals</Text>
+=======
+              <Text style={styles.tipText}>â€¢ General guideline: 8 glasses (8oz each)</Text>
+              <Text style={styles.tipText}>â€¢ More if you exercise regularly</Text>
+              <Text style={styles.tipText}>â€¢ Listen to your body's thirst signals</Text>
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
             </>
           )}
           {goalType === 'monthlyWorkouts' && (
             <>
+<<<<<<< HEAD
               <Text style={styles.tipText}>• Consistency is key for progress</Text>
               <Text style={styles.tipText}>• Allow rest days for recovery</Text>
               <Text style={styles.tipText}>• Gradually increase as you build habits</Text>
+=======
+              <Text style={styles.tipText}>â€¢ Consistency is key for progress</Text>
+              <Text style={styles.tipText}>â€¢ Allow rest days for recovery</Text>
+              <Text style={styles.tipText}>â€¢ Gradually increase as you build habits</Text>
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
             </>
           )}
         </View>
@@ -210,7 +303,11 @@ const EditGoalScreen = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -250,7 +347,11 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
+<<<<<<< HEAD
 goalInfoContainer: {
+=======
+  goalInfoContainer: {
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
     alignItems: 'center',
     marginBottom: 30,
   },
@@ -365,5 +466,12 @@ goalInfoContainer: {
     lineHeight: 20,
   },
 });
+<<<<<<< HEAD
 
 export default EditGoalScreen;
+=======
+ 
+export default EditGoalScreen;
+ 
+ 
+>>>>>>> 1f5dd7e3c2b0583593212ad311a379d4a0f7892c
