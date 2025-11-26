@@ -1,35 +1,27 @@
+// src/screens/themes.js
+
 export const lightTheme = {
-    background: '#F5F5F5',
-    card: '#FFFFFF',
-    text: '#333333',
-    subtext: '#666666',
-    border: '#E5E5EA',
-    accent: '#007AFF',
-    danger: '#FF3B30',
-    success: '#34C759',
-    info: '#2196F3',
-    chartBarBg: '#F0F0F0',
-    chartBarFillInfo: '#007AFF',
-    chartBarFillOK: '#4CAF50',
-    inverseText: '#FFFFFF',
-    input: '#FFFFFF',
-    highlight: '#F0F8FF',
-  };
-  
-  export const darkTheme = {
-    background: '#121212',
-    card: '#1E1E1E',
-    text: '#FFFFFF',
-    subtext: '#AAAAAA',
-    border: '#2C2C2E',
-    accent: '#0A84FF',
-    danger: '#FF453A',
-    success: '#30D158',
-    info: '#64D2FF',
-    chartBarBg: '#2C2C2E',
-    chartBarFillInfo: '#0A84FF',
-    chartBarFillOK: '#30D158',
-    inverseText: '#FFFFFF',
-    input: '#2C2C2E',
-    highlight: '#1E3A5F',
-  };
+  background: '#F5F5F7',
+  card: '#FFFFFF',
+  text: '#111827',
+  subtext: '#6B7280',
+  border: '#E5E7EB',
+  accent: '#6366F1',       // Indigo
+  accentSoft: '#E0E7FF',
+  success: '#22C55E',
+  danger: '#EF4444',
+  muted: '#9CA3AF',
+};
+
+export const darkTheme = {
+  background: '#020617',
+  card: '#0B1120',
+  text: '#E5E7EB',
+  subtext: '#9CA3AF',
+  border: '#1F2933',
+  accent: '#818CF8',
+  accentSoft: '#1E293B',
+  success: '#22C55E',
+  danger: '#F97373',
+  muted: '#6B7280',
+};
