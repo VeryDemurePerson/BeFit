@@ -41,23 +41,20 @@ const GoalsScreen = ({ navigation }) => {
     }, [])
   );
 
-  useEffect(() => {
-    fetchGoalsAndProgress();
-  }, []);
-
   const fetchGoalsAndProgress = async () => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-      if (userDoc.exists() && userDoc.data().goals) {
-        // ✅ Merge Firestore goals with defaults so all show up
-        const userGoals = userDoc.data().goals;
-        setGoals(prev => ({
-          ...prev,
-          ...userGoals,
-        }));
+      // Fetch user goals
+      try {
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists() && userDoc.data().goals) {
+          setGoals(prevDefaults => ({ ...prevDefaults, ...userDoc.data().goals }));
+        }
+      } catch (goalError) {
+        console.log('Could not fetch goals, using defaults:', goalError.message);
       }
       await calculateProgress();
     } catch (error) {
+      console.error('Error fetching goals:', error);
       Alert.alert('Error', 'Failed to load goals data');
     } finally {
       setLoading(false);
@@ -67,32 +64,55 @@ const GoalsScreen = ({ navigation }) => {
   const calculateProgress = async () => {
     try {
       const now = new Date();
-      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const oneWeekAgo = startOfWeek;
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const today = new Date().toISOString().split('T')[0];
 
-      const workoutsQuery = query(
-        collection(db, 'workouts'),
-        where('userId', '==', auth.currentUser.uid)
-      );
-      const workoutsSnapshot = await getDocs(workoutsQuery);
-      const workouts = workoutsSnapshot.docs.map(doc => doc.data());
+      // Fetch workouts
+      let workouts = [];
+      try {
+        const workoutsQuery = query(
+          collection(db, 'workouts'),
+          where('userId', '==', auth.currentUser.uid),
+          where('createdAt', '>=', monthStart)
+        );
+        const workoutsSnapshot = await getDocs(workoutsQuery);
+        workouts = workoutsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          data.createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+          return data;
+        });
+      } catch (workoutError) {
+        console.log('Could not fetch workouts for progress calculation:', workoutError.message);
+      }
 
+      // Weekly workouts
       const thisWeekWorkouts = workouts.filter(w => {
         const date = w.createdAt?.toDate?.() || new Date(w.createdAt);
         return date >= oneWeekAgo;
       });
+
       const weeklyWorkoutsCount = thisWeekWorkouts.length;
       const weeklyDurationCount = thisWeekWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0);
 
+      // Monthly workouts
       const thisMonthWorkouts = workouts.filter(w => {
         const date = w.createdAt?.toDate?.() || new Date(w.createdAt);
         return date >= monthStart;
       });
 
-      const todayKey = `${auth.currentUser.uid}_${today}`;
-      const waterDoc = await getDoc(doc(db, 'water_intake', todayKey));
-      const dailyWaterCount = waterDoc.exists() ? waterDoc.data().glasses : 0;
+      // Daily water
+      let dailyWaterCount = 0;
+      try {
+        const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
+        dailyWaterCount = waterDoc.exists() ? waterDoc.data().glasses : 0;
+      } catch (waterError) {
+        console.log('Could not fetch water data:', waterError.message);
+      }
 
       setProgress({
         weeklyWorkouts: weeklyWorkoutsCount,
@@ -111,24 +131,14 @@ const GoalsScreen = ({ navigation }) => {
       const waterDocRef = doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`);
       const waterDoc = await getDoc(waterDocRef);
       const currentGlasses = waterDoc.exists() ? waterDoc.data().glasses : 0;
-
-      await setDoc(
-        waterDocRef,
-        {
-          userId: auth.currentUser.uid,
-          date: today,
-          glasses: currentGlasses + 1,
-          updatedAt: new Date(),
-        },
-        { merge: true }
-      );
-
-      try {
-        await recordWaterGamification(auth.currentUser.uid, new Date());
-      } catch (e) {
-        console.log('Gamification (water) error:', e);
-      }
-
+      
+      await setDoc(waterDocRef, {
+        userId: auth.currentUser.uid,
+        date: today,
+        glasses: currentGlasses + 1,
+        updatedAt: new Date()
+      }, { merge: true });
+      
       setProgress(prev => ({
         ...prev,
         dailyWater: currentGlasses + 1,
@@ -139,7 +149,7 @@ const GoalsScreen = ({ navigation }) => {
     }
   };
 
-  const getGoalTitle = goalType => {
+  const getGoalTitle = (goalType) => {
     switch (goalType) {
       case 'weeklyWorkouts':
         return 'Weekly Workouts';
@@ -154,7 +164,7 @@ const GoalsScreen = ({ navigation }) => {
     }
   };
 
-  const getGoalIcon = goalType => {
+  const getGoalIcon = (goalType) => {
     switch (goalType) {
       case 'weeklyWorkouts': return '🏃‍♂️';
       case 'weeklyDuration': return '⏱️';
@@ -167,7 +177,7 @@ const GoalsScreen = ({ navigation }) => {
   const getProgressPercentage = goalType => {
     const goal = goals[goalType];
     const current = progress[goalType];
-    if (goal === 0) return 0;
+    if (!goal || goal === 0) return 0;
     return Math.min(Math.round((current / goal) * 100), 100);
   };
 
@@ -226,9 +236,7 @@ const GoalsScreen = ({ navigation }) => {
           />
         </View>
         {isCompleted && (
-          <Text style={[styles.completedMessage, { color: '#4CAF50' }]}>
-            🎉 Goal Completed!
-          </Text>
+          <Text style={styles.completedMessage}>🎉 Goal Completed!</Text>
         )}
       </View>
     );
@@ -243,7 +251,7 @@ const GoalsScreen = ({ navigation }) => {
           onPress={() => navigation.navigate('Workout', { screen: 'AddWorkout' })}
         >
           <Text style={styles.actionIcon}>💪</Text>
-          <Text style={[styles.actionText, { color: colors.text }]}>Add Workout</Text>
+          <Text style={styles.actionText}>Add Workout</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -251,7 +259,7 @@ const GoalsScreen = ({ navigation }) => {
           onPress={addWaterGlass}
         >
           <Text style={styles.actionIcon}>💧</Text>
-          <Text style={[styles.actionText, { color: colors.text }]}>Drink Water</Text>
+          <Text style={styles.actionText}>Drink Water</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -259,7 +267,7 @@ const GoalsScreen = ({ navigation }) => {
           onPress={() => navigation.navigate('Progress')}
         >
           <Text style={styles.actionIcon}>📊</Text>
-          <Text style={[styles.actionText, { color: colors.text }]}>View Progress</Text>
+          <Text style={styles.actionText}>View Progress</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -387,7 +395,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     lineHeight: 22,
   },
-  motivationAuthor: { fontSize: 14, color: 'white', opacity: 0.8 },
+  motivationAuthor: {
+    fontSize: 14,
+    color: 'white',
+    opacity: 0.8,
+  },
 });
 
 export default GoalsScreen;

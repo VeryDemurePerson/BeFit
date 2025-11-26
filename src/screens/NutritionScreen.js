@@ -9,7 +9,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from './ThemeContext';
@@ -52,7 +52,6 @@ const NutritionScreen = ({ navigation }) => {
       await fetchWeeklyHistory();
     } catch (error) {
       console.error('Error fetching nutrition data:', error);
-      Alert.alert('Error', 'Failed to load nutrition data');
     } finally {
       setLoading(false);
     }
@@ -112,20 +111,102 @@ const NutritionScreen = ({ navigation }) => {
     );
   };
 
-  const MealCard = ({ meal }) => (
-    <View style={[styles.mealCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.mealHeader}>
-        <Text style={[styles.mealType, { color: colors.text }]}>{meal.type}</Text>
-        <Text style={[styles.mealTime, { color: colors.subtext }]}>{meal.time}</Text>
-      </View>
-      {meal.foods.map((food, index) => (
-        <View key={index} style={styles.foodItem}>
-          <Text style={[styles.foodName, { color: colors.text }]}>{food.name}</Text>
-          <Text style={[styles.foodCalories, { color: colors.subtext }]}>{food.calories} cal</Text>
-        </View>
-      ))}
-    </View>
+  const deleteMeal = async (mealIndex) => {
+  Alert.alert(
+    "Delete Meal",
+    "Are you sure you want to delete this meal?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const today = new Date().toISOString().split('T')[0];
+            const updatedMeals = todayNutrition.meals.filter((_, i) => i !== mealIndex);
+
+            // Recalculate total calories and nutrients
+            const newTotals = updatedMeals.reduce(
+              (totals, meal) => {
+                meal.foods.forEach(food => {
+                  totals.calories += food.calories || 0;
+                  totals.protein += food.protein || 0;
+                  totals.carbs += food.carbs || 0;
+                  totals.fat += food.fat || 0;
+                  totals.fiber += food.fiber || 0;
+                });
+                return totals;
+              },
+              { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
+            );
+
+            // Update Firestore
+            await setDoc(doc(db, "nutrition", `${auth.currentUser.uid}_${today}`), {
+              ...todayNutrition,
+              meals: updatedMeals,
+              totalCalories: newTotals.calories,
+              nutrients: {
+                protein: newTotals.protein,
+                carbs: newTotals.carbs,
+                fat: newTotals.fat,
+                fiber: newTotals.fiber
+              }
+            });
+
+            // Update local state
+            setTodayNutrition(prev => ({
+              ...prev,
+              meals: updatedMeals,
+              totalCalories: newTotals.calories,
+              nutrients: newTotals
+            }));
+          } catch (error) {
+            console.error("Error deleting meal:", error);
+            Alert.alert("Error", "Failed to delete meal");
+          }
+        }
+      }
+    ]
   );
+};
+  const MealCard = ({ meal, index }) => (
+  <View style={styles.mealCard}>
+    <View style={styles.mealHeader}>
+      <Text style={styles.mealType}>{meal.type}</Text>
+      <View style={styles.mealActions}>
+        <Text style={styles.mealTime}>{meal.time}</Text>
+
+        {/* Edit Button */}
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('AddMeal', { meal, isEditing: true })
+          }
+          style={[styles.actionButton, styles.editButtonStyled]}
+        >
+          <Text style={styles.actionButtonText}>✏️</Text>
+        </TouchableOpacity>
+
+        {/* Delete Button */}
+        <TouchableOpacity
+          onPress={() => deleteMeal(index)}
+          style={[styles.actionButton, styles.deleteButtonStyled]}
+        >
+          <Text style={styles.actionButtonText}>🗑️</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+
+    {meal.foods.map((food, idx) => (
+      <View key={idx} style={styles.foodItem}>
+        <Text style={styles.foodName}>{food.name}</Text>
+        <Text style={styles.foodCalories}>{food.calories} cal</Text>
+      </View>
+    ))}
+  </View>
+);
+
+
+
 
   const WeeklyChart = () => (
     <View style={[styles.chartContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -164,7 +245,7 @@ const NutritionScreen = ({ navigation }) => {
             onPress={() => navigation.navigate('AddMeal', { mealType })}
           >
             <Text style={styles.quickMealIcon}>
-              {mealType === 'Breakfast' ? '🌅' : mealType === 'Lunch' ? '🥗' : mealType === 'Dinner' ? '🍽️' : '🎃'}
+              {mealType === 'Breakfast' ? '🌅' : mealType === 'Lunch' ? '🥗' : mealType === 'Dinner' ? '🍽️' : '🍎'}
             </Text>
             <Text style={[styles.quickMealText, { color: colors.text }]}>{mealType}</Text>
           </TouchableOpacity>
@@ -229,7 +310,9 @@ const NutritionScreen = ({ navigation }) => {
               <Text style={[styles.noMealsSubtext, { color: colors.subtext }]}>Tap + Add to log your first meal</Text>
             </View>
           ) : (
-            todayNutrition.meals.map((meal, index) => <MealCard key={index} meal={meal} />)
+            todayNutrition.meals.map((meal, index) => (
+              <MealCard key={index} meal={meal} index={index} />
+            ))
           )}
         </View>
 
@@ -258,51 +341,298 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  addButton: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 6 },
-  addButtonText: { color: 'white', fontSize: 16, fontWeight: '600' },
-  content: { flex: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 15 },
-  summaryContainer: { margin: 20, padding: 20, borderRadius: 12, alignItems: 'center', borderWidth: 1 },
-  caloriesSummary: { alignItems: 'center' },
-  caloriesNumber: { fontSize: 36, fontWeight: 'bold', marginBottom: 5 },
-  caloriesLabel: { fontSize: 16 },
-  nutrientsContainer: { paddingHorizontal: 20, marginBottom: 20 },
-  nutrientCard: { padding: 15, borderRadius: 8, marginBottom: 10, borderWidth: 1 },
-  nutrientHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  nutrientTitle: { fontSize: 16, fontWeight: '600' },
-  nutrientValues: { fontSize: 14, fontWeight: '500' },
-  progressBarContainer: { height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 5 },
-  progressBar: { height: '100%', borderRadius: 3 },
-  percentageText: { fontSize: 12 },
-  quickMealContainer: { paddingHorizontal: 20, marginBottom: 20 },
-  quickMealGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  quickMealButton: { padding: 15, borderRadius: 8, alignItems: 'center', flex: 1, marginHorizontal: 5, borderWidth: 1 },
-  quickMealIcon: { fontSize: 24, marginBottom: 8 },
-  quickMealText: { fontSize: 12, fontWeight: '600' },
-  mealsContainer: { paddingHorizontal: 20, marginBottom: 20 },
-  mealCard: { padding: 15, borderRadius: 8, marginBottom: 10, borderWidth: 1 },
-  mealHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  mealType: { fontSize: 16, fontWeight: '600' },
-  mealTime: { fontSize: 14 },
-  foodItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  foodName: { fontSize: 14 },
-  foodCalories: { fontSize: 14, fontWeight: '500' },
-  noMealsContainer: { padding: 30, borderRadius: 8, alignItems: 'center', borderWidth: 1 },
-  noMealsText: { fontSize: 16, marginBottom: 5 },
-  noMealsSubtext: { fontSize: 14 },
-  chartContainer: { margin: 20, padding: 20, borderRadius: 12, borderWidth: 1 },
-  chartTitle: { fontSize: 16, fontWeight: '600', marginBottom: 20, textAlign: 'center' },
-  barsContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 120 },
-  barContainer: { alignItems: 'center', flex: 1 },
-  barBackground: { width: 20, height: 80, borderRadius: 4, justifyContent: 'flex-end', marginBottom: 8 },
-  bar: { width: '100%', borderRadius: 4, minHeight: 2 },
-  barLabel: { fontSize: 12, marginBottom: 2 },
-  barValue: { fontSize: 10, fontWeight: 'bold' },
-  tipsContainer: { margin: 20, marginTop: 0, padding: 20, borderRadius: 12 },
-  tipsTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
-  tipText: { fontSize: 14, marginBottom: 8, lineHeight: 20 },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  addButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  content: {
+    flex: 1,
+  },
+  editButton: {
+    marginLeft: 10,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+  },
+  editButtonText: {
+    fontSize: 14,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 15,
+  },
+  summaryContainer: {
+    backgroundColor: 'white',
+    margin: 20,
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  caloriesSummary: {
+    alignItems: 'center',
+  },
+  caloriesNumber: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    marginBottom: 5,
+  },
+  caloriesLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  nutrientsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  nutrientCard: {
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  nutrientHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  nutrientTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  nutrientValues: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  progressBarContainer: {
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 5,
+  },
+  progressBar: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  percentageText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  quickMealContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  quickMealGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  quickMealButton: {
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  quickMealIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  quickMealText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+  },
+  mealsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  mealCard: {
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  mealHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  mealType: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  mealTime: {
+    fontSize: 14,
+    color: '#666',
+  },
+  foodItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  foodName: {
+    fontSize: 14,
+    color: '#333',
+  },
+  foodCalories: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  noMealsContainer: {
+    backgroundColor: 'white',
+    padding: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  noMealsText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 5,
+  },
+  noMealsSubtext: {
+    fontSize: 14,
+    color: '#666',
+  },
+  chartContainer: {
+    backgroundColor: 'white',
+    margin: 20,
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  barsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 120,
+  },
+  barContainer: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  barBackground: {
+    width: 20,
+    height: 80,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
+    justifyContent: 'flex-end',
+    marginBottom: 8,
+  },
+  bar: {
+    width: '100%',
+    borderRadius: 4,
+    minHeight: 2,
+  },
+  barLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  barValue: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  tipsContainer: {
+    backgroundColor: '#E8F5E8',
+    margin: 20,
+    marginTop: 0,
+    padding: 20,
+    borderRadius: 12,
+  },
+  tipsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    marginBottom: 15,
+  },
+  tipText: {
+    fontSize: 14,
+    color: '#2E7D32',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+    mealActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    marginLeft: 8,
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+  },
+  editButtonStyled: {
+    backgroundColor: '#007AFF20',
+  },
+  deleteButtonStyled: {
+    backgroundColor: '#FF3B3020',
+  },
+  actionButtonText: {
+    fontSize: 16,
+  },
 });
 
 export default NutritionScreen;
