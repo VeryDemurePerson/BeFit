@@ -71,14 +71,24 @@ const BADGES = {
   FIRST_WORKOUT: 'First Workout ✅',
   FIRST_MEAL: 'First Meal 🍽️',
   FIRST_WATER: 'First Water 💧',
-  STREAK_3: '3-Day Streak 🔥',
-  STREAK_7: '7-Day Streak 🏅',
-  QUICK_START: 'Logged Something in the First 5 Minutes ⏱️',
-  DOUBLE_LOG: 'Two Logs in One Day ✌️',
-  HYDRATION_HERO: '10 Glasses of Water in a Day 💦',
+
+  HYDRATION_HERO: '3 Glasses of Water 💦',
+  WATER_MASTER: '10 Glasses in a Day 🚰',
+
+  DOUBLE_LOG: 'Two Logs in a Row ✌️',
+  TRIPLE_LOG: 'Three Logs in a Row 💥',
+
   EARLY_BIRD: 'Workout Before 7am 🌅',
   NIGHT_OWL: 'Workout After 8pm 🌙',
+
+  STREAK_3: '3-Day Streak 🔥',
+  STREAK_7: '7-Day Streak 🏅',
+
+  GOAL_CRUSHER: 'Reached a Goal 🎯',
+  QUICK_START: 'Logged Something in First 5 Minutes ⏱️',
   TEST_MASTER: 'Unlocked 5 Badges 🧩',
+
+  PRESENTATION_PRO: 'Unlocked 8 Badges in One Demo 🏆'
 };
 
 async function maybeAwardBadges(uid, category) {
@@ -94,22 +104,33 @@ async function maybeAwardBadges(uid, category) {
   if (category === 'meal' && !owned.FIRST_MEAL) toAdd.FIRST_MEAL = true;
   if (category === 'water' && !owned.FIRST_WATER) toAdd.FIRST_WATER = true;
 
-  // Easy-test badges
-  const w = d.streaks?.workout || 0;
-  if (w >= 3 && !owned.STREAK_3) toAdd.STREAK_3 = true;
-  if (w >= 7 && !owned.STREAK_7) toAdd.STREAK_7 = true;
+  // Quick demo badges
+  if ((d.totalWater || 0) >= 3 && !owned.HYDRATION_HERO) toAdd.HYDRATION_HERO = true;
+  if ((d.totalWater || 0) >= 10 && !owned.WATER_MASTER) toAdd.WATER_MASTER = true;
+
+  if ((d.totalWorkouts || 0) >= 2 && !owned.DOUBLE_LOG) toAdd.DOUBLE_LOG = true;
+  if ((d.totalWorkouts || 0) >= 3 && !owned.TRIPLE_LOG) toAdd.TRIPLE_LOG = true;
+
+  // Time-based badges
   if (hour < 7 && !owned.EARLY_BIRD) toAdd.EARLY_BIRD = true;
   if (hour >= 20 && !owned.NIGHT_OWL) toAdd.NIGHT_OWL = true;
 
-  // Quick actions
+  // Streak badges
+  const w = d.streaks?.workout || 0;
+  if (w >= 3 && !owned.STREAK_3) toAdd.STREAK_3 = true;
+  if (w >= 7 && !owned.STREAK_7) toAdd.STREAK_7 = true;
+
+  // Quick start badge
   const created = d.createdAt?.toDate ? d.createdAt.toDate() : new Date();
   const minutesSince = (Date.now() - created.getTime()) / 60000;
   if (minutesSince <= 5 && !owned.QUICK_START) toAdd.QUICK_START = true;
 
-  // Meta badge
+  // Meta badges
   const newCount = Object.keys(owned).length + Object.keys(toAdd).length;
   if (newCount >= 5 && !owned.TEST_MASTER) toAdd.TEST_MASTER = true;
+  if (newCount >= 8 && !owned.PRESENTATION_PRO) toAdd.PRESENTATION_PRO = true;
 
+  // Apply any new badges
   if (Object.keys(toAdd).length) {
     const patch = {};
     Object.keys(toAdd).forEach(k => patch[`badges.${k}`] = true);

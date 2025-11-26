@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import {
+  View,
+  ActivityIndicator,
+  Text,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+  SafeAreaView,
+} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './src/services/firebase';
 import { useTheme, ThemeProvider } from './src/screens/ThemeContext';
@@ -11,16 +20,19 @@ import { lightTheme, darkTheme } from './src/screens/themes';
 // Import screens
 import LoginScreen from './src/screens/LoginScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
+
+// Main app screens
 import HomeScreen from './src/screens/HomeScreen';
 import WorkoutScreen from './src/screens/WorkoutScreen';
+import ProgressScreen from './src/screens/ProgressScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import NutritionScreen from './src/screens/NutritionScreen';
+import WaterTrackerScreen from './src/screens/WaterTrackerScreen';
+import GoalsScreen from './src/screens/GoalsScreen';
+
+// Hidden / detail screens
 import AddWorkoutScreen from './src/screens/AddWorkoutScreen';
 import EditWorkoutScreen from './src/screens/EditWorkoutScreen';
-import ProgressScreen from './src/screens/ProgressScreen';
-import GoalsScreen from './src/screens/GoalsScreen';
-import EditGoalScreen from './src/screens/EditGoalScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import EditProfileScreen from './src/screens/EditProfileScreen';
-import NutritionScreen from './src/screens/NutritionScreen';
 import AddMealScreen from './src/screens/AddMealScreen';
 import ChatbotScreen from './src/screens/ChatbotScreen';
 import FloatingChatButton from './src/components/FloatingChatButton';
@@ -41,26 +53,23 @@ const TabIcon = ({ name, focused, color, size }) => {
       default: return '.';
     }
   };
-  return (
-    <Text style={{ 
-      fontSize: size || 20, 
-      color: focused ? color : '#8E8E93',
-      opacity: focused ? 1 : 0.6 
-    }}>
-      {getIcon()}
-    </Text>
-  );
-};
 
 // Auth Stack
 function AuthStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="SignUp" component={SignUpScreen} />
-    </Stack.Navigator>
-  );
-}
+    <>
+      <SafeAreaView
+        style={[
+          styles.tabBar,
+          {
+            backgroundColor: themeColors.card,
+            borderTopColor: themeColors.border,
+          },
+        ]}
+      >
+        {PRIMARY_TABS.map((routeName, index) => {
+          const route = state.routes.find((r) => r.name === routeName);
+          if (!route) return null;
 
 // Workout Stack
 function WorkoutStack() {
@@ -83,23 +92,65 @@ function GoalsStack() {
   );
 }
 
-// Profile stack
-function ProfileStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
-      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-    </Stack.Navigator>
-  );
-}
+      <Modal
+        visible={moreVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMoreVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPressOut={() => setMoreVisible(false)}
+        >
+          <View
+            style={[
+              styles.moreCard,
+              {
+                backgroundColor: themeColors.card,
+                borderColor: themeColors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.moreTitle,
+                {
+                  color: themeColors.text,
+                },
+              ]}
+            >
+              Quick Actions
+            </Text>
 
-// Nutrition stack
-function NutritionStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="NutritionList" component={NutritionScreen} />
-      <Stack.Screen name="AddMeal" component={AddMealScreen} />
-    </Stack.Navigator>
+            {quickActions.map((item) => (
+              <TouchableOpacity
+                key={item.screen}
+                style={styles.moreItem}
+                onPress={() => {
+                  setMoreVisible(false);
+                  navigation.navigate(item.screen);
+                }}
+              >
+                <Ionicons
+                  name={item.icon}
+                  size={20}
+                  color={themeColors.accent}
+                />
+                <Text
+                  style={[
+                    styles.moreItemLabel,
+                    { color: themeColors.text },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
   );
 }
 
@@ -209,25 +260,46 @@ function RootNavigator() {
   );
 }
 
-// Root App
+function AuthStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="SignUp" component={SignUpScreen} />
+    </Stack.Navigator>
+  );
+}
+
 function AppContent() {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
-  const colors = theme === 'light' ? lightTheme : darkTheme;
+  const themeColors = theme === 'light' ? lightTheme : darkTheme;
+  const [user, setUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setCheckingAuth(false);
     });
     return unsubscribe;
   }, []);
 
-  if (isLoading) {
+  if (checkingAuth) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.accent} />
+      <View
+        style={[
+          styles.loadingContainer,
+          { backgroundColor: themeColors.background },
+        ]}
+      >
+        <ActivityIndicator size="large" color={themeColors.accent} />
+        <Text
+          style={[
+            styles.loadingText,
+            { color: themeColors.subtext },
+          ]}
+        >
+          Loading BeFit...
+        </Text>
       </View>
     );
   }

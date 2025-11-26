@@ -15,6 +15,7 @@ import { auth, db } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from './ThemeContext';
 import { lightTheme, darkTheme } from './themes';
+import { recordWaterGamification } from '../gamification/engine';
 
 const GoalsScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -99,9 +100,9 @@ const GoalsScreen = ({ navigation }) => {
         return date >= monthStart;
       });
 
-      let dailyWaterCount = 0;
-      const waterDoc = await getDoc(doc(db, 'water_intake', `${auth.currentUser.uid}_${today}`));
-      dailyWaterCount = waterDoc.exists() ? waterDoc.data().glasses : 0;
+      const todayKey = `${auth.currentUser.uid}_${today}`;
+      const waterDoc = await getDoc(doc(db, 'water_intake', todayKey));
+      const dailyWaterCount = waterDoc.exists() ? waterDoc.data().glasses : 0;
 
       setProgress({
         weeklyWorkouts: weeklyWorkoutsCount,
@@ -131,6 +132,12 @@ const GoalsScreen = ({ navigation }) => {
         },
         { merge: true }
       );
+
+      try {
+        await recordWaterGamification(auth.currentUser.uid, new Date());
+      } catch (e) {
+        console.log('Gamification (water) error:', e);
+      }
 
       setProgress(prev => ({
         ...prev,
