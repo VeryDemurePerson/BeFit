@@ -186,7 +186,7 @@ import { searchFoods } from '../services/foodApi';
         },
         date: today,
         userId: auth.currentUser.uid,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
 
@@ -200,6 +200,11 @@ import { searchFoods } from '../services/foodApi';
       Alert.alert('Error', `Failed to save meal: ${error.message}`);
     } finally {
       setLoading(false);
+    }
+    try {
+      await recordMealGamification(auth.currentUser.uid, new Date());
+    } catch (e) {
+      console.log('Gamification (meal) error:', e);
     }
   };
 
@@ -385,11 +390,11 @@ import { searchFoods } from '../services/foodApi';
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
+          <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Add {mealType}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Add {mealType}</Text>
         <TouchableOpacity onPress={saveMeal} disabled={loading}>
-          <Text style={[styles.saveButton, loading && styles.disabled]}>
+          <Text style={[styles.saveButton, { color: colors.accent, opacity: loading ? 0.5 : 1 }]}>
             {loading ? 'Saving...' : 'Save'}
           </Text>
         </TouchableOpacity>
@@ -481,13 +486,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  title: { fontSize: 18, fontWeight: 'bold' },
+  cancelButton: { fontSize: 16 },
+  saveButton: { fontSize: 16, fontWeight: '600' },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  mealTypeContainer: { marginBottom: 25 },
+  mealTypeTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10 },
+  mealTypeSelector: { flexDirection: 'row', justifyContent: 'space-between' },
   mealTypeButton: {
     flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#ddd',
     marginHorizontal: 3,
     alignItems: 'center',
     backgroundColor: 'white',
@@ -666,8 +677,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  mealTypeButtonText: { fontSize: 14, fontWeight: '500' },
+  foodInputContainer: { padding: 20, borderRadius: 12, marginBottom: 20, borderWidth: 1 },
+  foodInputHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
+  foodInputTitle: { fontSize: 16, fontWeight: '600' },
+  removeButton: { fontSize: 14, fontWeight: '500' },
+  inputLabel: { fontSize: 14, fontWeight: '500', marginBottom: 8, marginTop: 10 },
+  input: { paddingHorizontal: 15, paddingVertical: 12, borderRadius: 8, fontSize: 16, borderWidth: 1 },
+  suggestionsTitle: { fontSize: 14, fontWeight: '500', marginTop: 15, marginBottom: 10 },
+  suggestionChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6, marginRight: 8, minWidth: 80 },
+  suggestionText: { fontSize: 12, fontWeight: '500', textAlign: 'center', marginBottom: 2 },
+  suggestionCalories: { fontSize: 10 },
+  addFoodButton: { padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 20, borderWidth: 1 },
+  addFoodButtonText: { fontSize: 16, fontWeight: '500' },
   totalContainer: {
-    backgroundColor: 'white',
     padding: 20,
     borderRadius: 12,
     flexDirection: 'row',
