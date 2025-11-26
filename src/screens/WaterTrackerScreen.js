@@ -200,7 +200,7 @@ const WaterTrackerScreen = () => {
                 style={[
                   styles.bar, 
                   { 
-                    height: `${Math.min((day.glasses / dailyGoal) * 100, 100)}`%,
+                    height: `${Math.min((day.glasses / dailyGoal) * 100, 100)}%`,
                     backgroundColor: day.glasses >= dailyGoal ? '#4CAF50' : '#2196F3'
                   }
                 ]} 
@@ -258,7 +258,7 @@ const WaterTrackerScreen = () => {
 
           <View style={styles.progressBarContainer}>
             <View 
-              style={[styles.progressBar, { width: `${getProgressPercentage()}`% }]} 
+              style={[styles.progressBar, { width: `${getProgressPercentage()}%` }]} 
             />
           </View>
 
