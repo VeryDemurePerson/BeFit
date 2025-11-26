@@ -263,7 +263,7 @@ const GoalsScreen = ({ navigation }) => {
           style={styles.actionButton}
           onPress={() => navigation.navigate('Workout', { screen: 'AddWorkout' })}
         >
-          <Text style={styles.actionIcon}>ðŸ’ª</Text>
+          <Text style={styles.actionIcon}>💪</Text>
           <Text style={styles.actionText}>Add Workout</Text>
         </TouchableOpacity>
         

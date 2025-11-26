@@ -9,7 +9,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { doc, getDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, collection, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -135,20 +135,102 @@ const NutritionScreen = ({ navigation }) => {
     );
   };
 
-  const MealCard = ({ meal }) => (
-    <View style={styles.mealCard}>
-      <View style={styles.mealHeader}>
-        <Text style={styles.mealType}>{meal.type}</Text>
-        <Text style={styles.mealTime}>{meal.time}</Text>
-      </View>
-      {meal.foods.map((food, index) => (
-        <View key={index} style={styles.foodItem}>
-          <Text style={styles.foodName}>{food.name}</Text>
-          <Text style={styles.foodCalories}>{food.calories} cal</Text>
-        </View>
-      ))}
-    </View>
+  const deleteMeal = async (mealIndex) => {
+  Alert.alert(
+    "Delete Meal",
+    "Are you sure you want to delete this meal?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const today = new Date().toISOString().split('T')[0];
+            const updatedMeals = todayNutrition.meals.filter((_, i) => i !== mealIndex);
+
+            // Recalculate total calories and nutrients
+            const newTotals = updatedMeals.reduce(
+              (totals, meal) => {
+                meal.foods.forEach(food => {
+                  totals.calories += food.calories || 0;
+                  totals.protein += food.protein || 0;
+                  totals.carbs += food.carbs || 0;
+                  totals.fat += food.fat || 0;
+                  totals.fiber += food.fiber || 0;
+                });
+                return totals;
+              },
+              { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
+            );
+
+            // Update Firestore
+            await setDoc(doc(db, "nutrition", `${auth.currentUser.uid}_${today}`), {
+              ...todayNutrition,
+              meals: updatedMeals,
+              totalCalories: newTotals.calories,
+              nutrients: {
+                protein: newTotals.protein,
+                carbs: newTotals.carbs,
+                fat: newTotals.fat,
+                fiber: newTotals.fiber
+              }
+            });
+
+            // Update local state
+            setTodayNutrition(prev => ({
+              ...prev,
+              meals: updatedMeals,
+              totalCalories: newTotals.calories,
+              nutrients: newTotals
+            }));
+          } catch (error) {
+            console.error("Error deleting meal:", error);
+            Alert.alert("Error", "Failed to delete meal");
+          }
+        }
+      }
+    ]
   );
+};
+  const MealCard = ({ meal, index }) => (
+  <View style={styles.mealCard}>
+    <View style={styles.mealHeader}>
+      <Text style={styles.mealType}>{meal.type}</Text>
+      <View style={styles.mealActions}>
+        <Text style={styles.mealTime}>{meal.time}</Text>
+
+        {/* Edit Button */}
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('AddMeal', { meal, isEditing: true })
+          }
+          style={[styles.actionButton, styles.editButtonStyled]}
+        >
+          <Text style={styles.actionButtonText}>✏️</Text>
+        </TouchableOpacity>
+
+        {/* Delete Button */}
+        <TouchableOpacity
+          onPress={() => deleteMeal(index)}
+          style={[styles.actionButton, styles.deleteButtonStyled]}
+        >
+          <Text style={styles.actionButtonText}>🗑️</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+
+    {meal.foods.map((food, idx) => (
+      <View key={idx} style={styles.foodItem}>
+        <Text style={styles.foodName}>{food.name}</Text>
+        <Text style={styles.foodCalories}>{food.calories} cal</Text>
+      </View>
+    ))}
+  </View>
+);
+
+
+
 
   const WeeklyChart = () => (
     <View style={styles.chartContainer}>
@@ -278,7 +360,7 @@ const NutritionScreen = ({ navigation }) => {
             </View>
           ) : (
             todayNutrition.meals.map((meal, index) => (
-              <MealCard key={index} meal={meal} />
+              <MealCard key={index} meal={meal} index={index} />
             ))
           )}
         </View>
@@ -338,6 +420,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  editButton: {
+    marginLeft: 10,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+  },
+  editButtonText: {
+    fontSize: 14,
   },
   sectionTitle: {
     fontSize: 18,
@@ -573,6 +665,32 @@ const styles = StyleSheet.create({
     color: '#2E7D32',
     marginBottom: 8,
     lineHeight: 20,
+  },
+    mealActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    marginLeft: 8,
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+  },
+  editButtonStyled: {
+    backgroundColor: '#007AFF20',
+  },
+  deleteButtonStyled: {
+    backgroundColor: '#FF3B3020',
+  },
+  actionButtonText: {
+    fontSize: 16,
   },
 });
 
