@@ -39,6 +39,9 @@ import AddMealScreen from './src/screens/AddMealScreen';
 import EditGoalScreen from './src/screens/EditGoalScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 
+// Gamification screen
+import AchievementsScreen from './src/screens/AchievementsScreen';
+
 // AI Chat
 import ChatbotScreen from './src/screens/ChatbotScreen';
 import FloatingChatButton from './src/components/FloatingChatButton';
@@ -56,6 +59,7 @@ function BeFitTabBar({ state, descriptors, navigation, themeColors }) {
     { label: 'Nutrition', icon: 'fast-food-outline', screen: 'Nutrition' },
     { label: 'Water tracker', icon: 'water-outline', screen: 'WaterTracker' },
     { label: 'Goals', icon: 'flag-outline', screen: 'Goals' },
+    { label: 'Achievements', icon: 'trophy-outline', screen: 'Achievements' },
   ];
 
   const renderIcon = (routeName, focused) => {
@@ -257,6 +261,11 @@ function MainTabs() {
         <Tab.Screen
           name="EditProfile"
           component={EditProfileScreen}
+          options={{ tabBarButton: () => null }}
+        />
+        <Tab.Screen
+          name="Achievements"
+          component={AchievementsScreen}
           options={{ tabBarButton: () => null }}
         />
       </Tab.Navigator>
