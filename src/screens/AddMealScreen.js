@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+// src/screens/AddMealScreen.js — Light/Dark Mode + Gamification
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,17 +9,13 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { searchFoods } from '../services/foodApi';
-import { useTheme } from './ThemeContext';
-import { lightTheme, darkTheme } from './themes';
+import { useTheme, lightTheme, darkTheme } from './ThemeContext';
 
-const AddMealScreen = ({ navigation, route }) => {
+  const AddMealScreen = ({ navigation, route }) => {
   
     const { mealType = 'Breakfast', meal = null, isEditing = false } = route.params || {};
 
@@ -35,41 +32,26 @@ const AddMealScreen = ({ navigation, route }) => {
       }
   }, [isEditing, meal]);
 
-  const [foods, setFoods] = useState([{ id: Date.now(), name: '', calories: '', protein: 0, carbs: 0, fat: 0 }]);
+  const [foods, setFoods] = useState([{ id: Date.now(), name: '', calories: '' }]);
   const [loading, setLoading] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState({});
   const [searchLoading, setSearchLoading] = useState({});
   const searchTimeouts = useRef({});
   
+  // Get theme with proper error handling
   const themeContext = useTheme();
   const theme = themeContext?.theme || 'light';
   const colors = (theme === 'light' ? lightTheme : darkTheme) || {
     accent: '#007AFF',
     text: '#333',
-    background: '#f5f5f5',
-    cardBackground: '#ffffff',
-    inputBackground: '#f8f8f8',
-    border: '#e0e0e0',
-    placeholderText: '#999'
+    background: '#f5f5f5'
   };
-
-  useEffect(() => {
-    if (isEditing && meal) {
-      setFoods(meal.foods.map(f => ({
-        id: Date.now() + Math.random(),
-        name: f.name,
-        calories: f.calories.toString(),
-        protein: f.protein || 0,
-        carbs: f.carbs || 0,
-        fat: f.fat || 0
-      })));
-    }
-  }, [isEditing, meal]);
 
   const addFoodField = () => setFoods([...foods, { id: Date.now(), name: '', calories: '', protein: 0, carbs: 0, fat: 0 }]);
   const removeFoodField = (id) => foods.length > 1 && setFoods(foods.filter((food) => food.id !== id));
 
   const performSearch = useCallback(async (text, id) => {
+    console.log('performSearch called with:', text, 'for id:', id);
     const trimmedText = text?.trim();
     if (!trimmedText || trimmedText.length < 2 || !/[a-zA-Z0-9]/.test(trimmedText)) {
       setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
@@ -80,6 +62,8 @@ const AddMealScreen = ({ navigation, route }) => {
     setSearchLoading(prev => ({ ...prev, [id]: true }));
     try {
       const results = await searchFoods(trimmedText);
+      console.log('Search completed, got', results?.length || 0, 'results for id', id);
+      
       setSearchSuggestions(prev => ({ ...prev, [id]: results || [] }));
     } catch (error) {
       console.error('Search error:', error);
@@ -90,6 +74,9 @@ const AddMealScreen = ({ navigation, route }) => {
   }, []);
 
   const handleFoodNameChange = useCallback((text, id) => {
+    console.log('handleFoodNameChange called with:', text, 'for id:', id);
+    
+    // Update the food name immediately
     setFoods(prevFoods => 
       prevFoods.map((food) => 
         food.id === id ? { ...food, name: text } : food
@@ -98,14 +85,18 @@ const AddMealScreen = ({ navigation, route }) => {
     
     if (searchTimeouts.current[id]) {
       clearTimeout(searchTimeouts.current[id]);
+      console.log('Cleared previous timeout for id:', id);
     }
     
     const trimmedText = text?.trim();
     if (trimmedText && trimmedText.length >= 2 && /[a-zA-Z0-9]/.test(trimmedText)) {
+      console.log('Setting timeout to search for:', trimmedText);
       searchTimeouts.current[id] = setTimeout(() => {
+        console.log('Timeout fired! Performing search for id:', id);
         performSearch(text, id);
       }, 400);
     } else {
+      console.log('Text too short or invalid, clearing suggestions for id:', id);
       setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
       setSearchLoading(prev => ({ ...prev, [id]: false }));
     }
@@ -120,57 +111,40 @@ const AddMealScreen = ({ navigation, route }) => {
   }, []);
 
   const saveMeal = async () => {
-    const validFoods = foods.filter(food => food.name.trim() && food.calories);
-    if (validFoods.length === 0) return Alert.alert('Error', 'Please add at least one food item with calories');
-
-    for (let food of validFoods) {
-      if (isNaN(food.calories) || parseInt(food.calories) < 0) {
-        return Alert.alert('Error', `Please enter a valid calorie value for ${food.name}`);
-      }
-    }
+    const validFoods = foods.filter((f) => f.name.trim() && f.calories);
+    if (!validFoods.length) return Alert.alert('Error', 'Please add at least one food item with calories');
 
     setLoading(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      const nutritionDocRef = doc(db, 'nutrition', `${auth.currentUser.uid}_${today}`);
-      const nutritionDoc = await getDoc(nutritionDocRef);
-      const existingData = nutritionDoc.exists() ? nutritionDoc.data() : {
-        meals: [],
-        totalCalories: 0,
-        nutrients: { protein: 0, carbs: 0, fat: 0, fiber: 0 }
-      };
+      const ref = doc(db, 'nutrition', `${auth.currentUser.uid}_${today}`);
+      const docSnap = await getDoc(ref);
+      const existing = docSnap.exists()
+        ? docSnap.data()
+        : { meals: [], totalCalories: 0, nutrients: { protein: 0, carbs: 0, fat: 0, fiber: 0 } };
 
       const mealCalories = validFoods.reduce((sum, f) => sum + parseInt(f.calories), 0);
-      const mealProtein = validFoods.reduce((sum, f) => sum + (f.protein || 0), 0);
-      const mealCarbs = validFoods.reduce((sum, f) => sum + (f.carbs || 0), 0);
-      const mealFat = validFoods.reduce((sum, f) => sum + (f.fat || 0), 0);
+      const est = {
+        protein: Math.round((mealCalories * 0.15) / 4),
+        carbs: Math.round((mealCalories * 0.5) / 4),
+        fat: Math.round((mealCalories * 0.35) / 9),
+        fiber: Math.round(mealCalories * 0.02),
+      };
 
       const newMeal = {
         type: mealType,
         time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        foods: validFoods.map(f => ({
-          name: f.name.trim(),
-          calories: parseInt(f.calories),
-          protein: f.protein,
-          carbs: f.carbs,
-          fat: f.fat
-        })),
-        calories: mealCalories
-      };
-
-      let updatedMeals;
-      let updatedTotals = {
-        totalCalories: existingData.totalCalories,
-        protein: existingData.nutrients.protein,
-        carbs: existingData.nutrients.carbs,
-        fat: existingData.nutrients.fat,
+        foods: validFoods.map((f) => ({ name: f.name.trim(), calories: parseInt(f.calories) })),
+        calories: mealCalories,
       };
 
       if (isEditing && meal) {
+        // Replace the existing meal (by matching its type and time)
         updatedMeals = existingData.meals.map((m) =>
           m.type === meal.type && m.time === meal.time ? newMeal : m
         );
 
+        // Recalculate totals from scratch
         const totals = updatedMeals.reduce(
           (acc, m) => ({
             totalCalories: acc.totalCalories + m.calories,
@@ -183,6 +157,7 @@ const AddMealScreen = ({ navigation, route }) => {
 
         updatedTotals = totals;
       } else {
+        // Add new meal
         updatedMeals = [...existingData.meals, newMeal];
         updatedTotals = {
           totalCalories: existingData.totalCalories + mealCalories,
@@ -196,32 +171,33 @@ const AddMealScreen = ({ navigation, route }) => {
         meals: updatedMeals,
         totalCalories: updatedTotals.totalCalories,
         nutrients: {
-          protein: updatedTotals.protein,
-          carbs: updatedTotals.carbs,
-          fat: updatedTotals.fat,
-          fiber: existingData.nutrients.fiber
+          protein: existing.nutrients.protein + est.protein,
+          carbs: existing.nutrients.carbs + est.carbs,
+          fat: existing.nutrients.fat + est.fat,
+          fiber: existing.nutrients.fiber + est.fiber,
         },
         date: today,
         userId: auth.currentUser.uid,
         updatedAt: new Date(),
       };
 
+      await setDoc(ref, updated);
 
-      await setDoc(nutritionDocRef, updatedData);
+      // 🔥 Gamification: log a meal
+      try {
+        await recordMealGamification(auth.currentUser.uid);
+      } catch (e) {
+        console.log('Gamification (meal) error:', e);
+      }
 
       Alert.alert('Success', 'Meal logged successfully!', [
-        { text: 'OK', onPress: () => navigation.navigate('Nutrition') }
+        { text: 'OK', onPress: () => navigation.goBack() }
       ]);
-    } catch (error) {
-      console.error('Error saving meal:', error);
-      Alert.alert('Error', `Failed to save meal: ${error.message}`);
+    } catch (err) {
+      console.error('Error saving meal:', err);
+      Alert.alert('Error', `Failed to save meal: ${err.message}`);
     } finally {
       setLoading(false);
-    }
-    try {
-      await recordMealGamification(auth.currentUser.uid, new Date());
-    } catch (e) {
-      console.log('Gamification (meal) error:', e);
     }
   };
 
@@ -230,6 +206,7 @@ const AddMealScreen = ({ navigation, route }) => {
     const suggestions = searchSuggestions[food.id] || [];
     const loadingSuggestions = searchLoading[food.id] || false;
 
+    // Sync local name when food name changes from outside (like from suggestion selection)
     useEffect(() => {
       if (food.name !== localName) {
         setLocalName(food.name);
@@ -242,8 +219,12 @@ const AddMealScreen = ({ navigation, route }) => {
     };
 
     const handleSelectSuggestion = (item) => {
+      console.log('Selecting suggestion:', item.name);
+      
+      // Update local state immediately
       setLocalName(item.name);
       
+      // Update all food properties at once
       setFoods(prevFoods => 
         prevFoods.map((f) => 
           f.id === food.id ? {
@@ -257,6 +238,7 @@ const AddMealScreen = ({ navigation, route }) => {
         )
       );
       
+      // Clear suggestions for this input
       setSearchSuggestions(prev => ({ ...prev, [food.id]: [] }));
     };
 
@@ -277,37 +259,23 @@ const AddMealScreen = ({ navigation, route }) => {
     };
 
     return (
-      <View style={[styles.foodInputContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+      <View style={styles.foodInputContainer}>
         <View style={styles.foodInputHeader}>
-          <View style={styles.foodItemTitleContainer}>
-            <Text style={[styles.foodInputTitle, { color: colors.text }]}>🍽️ Food Item</Text>
-            {foods.length > 1 && (
-              <View style={styles.foodCountBadge}>
-                <Text style={styles.foodCountText}>{foods.indexOf(food) + 1}</Text>
-              </View>
-            )}
-          </View>
+          <Text style={styles.foodInputTitle}>Food Item</Text>
           {foods.length > 1 && (
-            <TouchableOpacity 
-              onPress={() => removeFoodField(food.id)}
-              style={[styles.removeButtonContainer, { backgroundColor: colors.danger + '15' }]}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.removeButton, { color: colors.danger }]}>✕ Remove</Text>
+            <TouchableOpacity onPress={() => removeFoodField(food.id)}>
+              <Text style={styles.removeButton}>Remove</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.subtext }]}>🔍 Food Name</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
-            value={localName}
-            onChangeText={handleNameChange}
-            placeholder="Search for a food (e.g., Chicken breast)"
-            placeholderTextColor={colors.placeholderText}
-          />
-        </View>
+        <Text style={styles.inputLabel}>Food Name</Text>
+        <TextInput
+          style={styles.input}
+          value={localName}
+          onChangeText={handleNameChange}
+          placeholder="e.g., Chicken breast"
+        />
 
         {loadingSuggestions && (
           <View style={styles.loadingContainer}>
@@ -324,102 +292,87 @@ const AddMealScreen = ({ navigation, route }) => {
 
         {suggestions.length > 0 && (
           <View style={styles.suggestionsWrapper}>
-            <View style={styles.suggestionsHeaderContainer}>
-              <Text style={[styles.suggestionsHeader, { color: colors.accent }]}>✨ Suggested Foods</Text>
-              <Text style={[styles.suggestionCount, { color: colors.subtext }]}>
-                {suggestions.length} result{suggestions.length !== 1 ? 's' : ''}
-              </Text>
-            </View>
-            <ScrollView style={[styles.suggestionsBox, { backgroundColor: colors.inputBackground, borderColor: colors.border }]} nestedScrollEnabled showsVerticalScrollIndicator={true}>
+            <Text style={styles.suggestionsHeader}>Tap to select:</Text>
+            <ScrollView style={styles.suggestionsBox} nestedScrollEnabled showsVerticalScrollIndicator={true}>
               {suggestions.map((item, i) => (
                 <TouchableOpacity
                   key={`suggestion-${food.id}-${i}`}
                   style={[
                     styles.suggestionItem,
-                    { backgroundColor: colors.cardBackground, borderBottomColor: colors.border },
                     i === suggestions.length - 1 && styles.suggestionItemLast
                   ]}
                   onPress={() => handleSelectSuggestion(item)}
                   activeOpacity={0.6}
                 >
                   <View style={styles.suggestionContent}>
-                    <Text style={[styles.suggestionName, { color: colors.text }]} numberOfLines={2}>
+                    <Text style={styles.suggestionName} numberOfLines={2}>
                       {item.name}
                     </Text>
                     <View style={styles.suggestionMacrosContainer}>
-                      <View style={[styles.macroChip, { backgroundColor: colors.accentSoft }]}>
-                        <Text style={[styles.macroChipLabel, { color: colors.accent }]}>Cal</Text>
-                        <Text style={[styles.macroChipValue, { color: colors.text }]}>{item.calories}</Text>
+                      <View style={styles.macroChip}>
+                        <Text style={styles.macroChipLabel}>Cal</Text>
+                        <Text style={styles.macroChipValue}>{item.calories}</Text>
                       </View>
-                      <View style={[styles.macroChip, { backgroundColor: colors.success + '15' }]}>
-                        <Text style={[styles.macroChipLabel, { color: colors.success }]}>P</Text>
-                        <Text style={[styles.macroChipValue, { color: colors.text }]}>{item.protein}g</Text>
+                      <View style={styles.macroChip}>
+                        <Text style={styles.macroChipLabel}>P</Text>
+                        <Text style={styles.macroChipValue}>{item.protein}g</Text>
                       </View>
-                      <View style={[styles.macroChip, { backgroundColor: colors.warning + '15' }]}>
-                        <Text style={[styles.macroChipLabel, { color: '#FF9500' }]}>C</Text>
-                        <Text style={[styles.macroChipValue, { color: colors.text }]}>{item.carbs}g</Text>
+                      <View style={styles.macroChip}>
+                        <Text style={styles.macroChipLabel}>C</Text>
+                        <Text style={styles.macroChipValue}>{item.carbs}g</Text>
                       </View>
-                      <View style={[styles.macroChip, { backgroundColor: colors.danger + '15' }]}>
-                        <Text style={[styles.macroChipLabel, { color: colors.danger }]}>F</Text>
-                        <Text style={[styles.macroChipValue, { color: colors.text }]}>{item.fat}g</Text>
+                      <View style={styles.macroChip}>
+                        <Text style={styles.macroChipLabel}>F</Text>
+                        <Text style={styles.macroChipValue}>{item.fat}g</Text>
                       </View>
                     </View>
                   </View>
-                  <Text style={[styles.chevron, { color: colors.subtext }]}>›</Text>
+                  <Text style={styles.chevron}>›</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
         )}
 
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.subtext }]}>🔥 Calories</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
-            value={food.calories}
-            onChangeText={handleCaloriesChange}
-            placeholder="Enter calories (e.g., 200)"
-            placeholderTextColor={colors.placeholderText}
-            keyboardType="numeric"
-          />
-        </View>
+        <Text style={styles.inputLabel}>Calories</Text>
+        <TextInput
+          style={styles.input}
+          value={food.calories}
+          onChangeText={handleCaloriesChange}
+          placeholder="e.g., 200"
+          keyboardType="numeric"
+        />
 
-        <View style={styles.macrosSection}>
-          <Text style={[styles.macrosSectionTitle, { color: colors.subtext }]}>📊 Macronutrients (Optional)</Text>
-          <View style={styles.macrosContainer}>
-            <View style={styles.macroInput}>
-              <Text style={[styles.macroLabel, { color: colors.subtext }]}>Protein (g)</Text>
-              <TextInput
-                style={[styles.smallInput, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
-                value={food.protein.toString()}
-                onChangeText={(text) => handleMacroChange('protein', text)}
-                placeholder="0"
-                placeholderTextColor={colors.placeholderText}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.macroInput}>
-              <Text style={[styles.macroLabel, { color: colors.subtext }]}>Carbs (g)</Text>
-              <TextInput
-                style={[styles.smallInput, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
-                value={food.carbs.toString()}
-                onChangeText={(text) => handleMacroChange('carbs', text)}
-                placeholder="0"
-                placeholderTextColor={colors.placeholderText}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.macroInput}>
-              <Text style={[styles.macroLabel, { color: colors.subtext }]}>Fat (g)</Text>
-              <TextInput
-                style={[styles.smallInput, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
-                value={food.fat.toString()}
-                onChangeText={(text) => handleMacroChange('fat', text)}
-                placeholder="0"
-                placeholderTextColor={colors.placeholderText}
-                keyboardType="numeric"
-              />
-            </View>
+        <View style={styles.macrosContainer}>
+          <View style={styles.macroInput}>
+            <Text style={styles.inputLabel}>Protein (g)</Text>
+            <TextInput
+              style={styles.smallInput}
+              value={food.protein.toString()}
+              onChangeText={(text) => handleMacroChange('protein', text)}
+              placeholder="0"
+              keyboardType="numeric"
+            />
+          </View>
+          <View style={styles.macroInput}>
+            <Text style={styles.inputLabel}>Carbs (g)</Text>
+            <TextInput
+              style={styles.smallInput}
+              value={food.carbs.toString()}
+              onChangeText={(text) => handleMacroChange('carbs', text)}
+              placeholder="0"
+              keyboardType="numeric"
+            />
+          </View>
+          <View style={styles.macroInput}>
+            <Text style={styles.inputLabel}>Fat (g)</Text>
+            <TextInput
+              style={styles.smallInput}
+              value={food.fat.toString()}
+              onChangeText={(text) => handleMacroChange('fat', text)}
+              placeholder="0"
+              keyboardType="numeric"
+            />
           </View>
         </View>
       </View>
@@ -427,23 +380,13 @@ const AddMealScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView 
-        style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
-      >
-      <ScrollView 
-        style={[styles.container, { backgroundColor: colors.background }]} 
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Nutrition')} style={styles.headerButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Add {mealType}</Text>
-        <TouchableOpacity onPress={saveMeal} disabled={loading} style={styles.headerButton}>
+        <TouchableOpacity onPress={saveMeal} disabled={loading}>
           <Text style={[styles.saveButton, { color: colors.accent, opacity: loading ? 0.5 : 1 }]}>
             {loading ? 'Saving...' : 'Save'}
           </Text>
@@ -451,24 +394,20 @@ const AddMealScreen = ({ navigation, route }) => {
       </View>
 
       <View style={styles.mealTypeContainer}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Meal Type</Text>
+        <Text style={styles.mealTypeTitle}>Meal Type</Text>
         <View style={styles.mealTypeSelector}>
           {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((type) => (
             <TouchableOpacity
               key={type}
               style={[
                 styles.mealTypeButton,
-                { 
-                  backgroundColor: mealType === type ? colors.accent : colors.cardBackground, 
-                  borderColor: mealType === type ? colors.accent : colors.border 
-                },
+                mealType === type && styles.mealTypeButtonActive
               ]}
               onPress={() => navigation.setParams({ mealType: type })}
-              activeOpacity={0.7}
             >
               <Text style={[
                 styles.mealTypeButtonText,
-                { color: mealType === type ? '#FFFFFF' : colors.text },
+                mealType === type && styles.mealTypeButtonTextActive
               ]}>
                 {type}
               </Text>
@@ -477,69 +416,62 @@ const AddMealScreen = ({ navigation, route }) => {
         </View>
       </View>
 
-      {foods.map((food) => (
-        <FoodInput key={food.id} food={food} />
-      ))}
+        {foods.map((food, i) => (
+          <FoodInput key={food.id} food={food} index={i} />
+        ))}
 
-      <TouchableOpacity style={styles.addFoodButton} onPress={addFoodField}>
-        <Text style={styles.addFoodButtonText}>+ Add Another Food</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.addFoodButton,
+            { borderColor: colors.accent, backgroundColor: colors.card },
+          ]}
+          onPress={addFoodField}
+        >
+          <Text style={[styles.addFoodButtonText, { color: colors.accent }]}>
+            + Add Another Food
+          </Text>
+        </TouchableOpacity>
 
-      <View style={[styles.totalContainer, { backgroundColor: colors.cardBackground }]}>
-        <Text style={[styles.totalLabel, { color: colors.text }]}>Total Calories:</Text>
-        <Text style={[styles.totalValue, { color: colors.accent }]}>
+      <View style={styles.totalContainer}>
+        <Text style={styles.totalLabel}>Total Calories:</Text>
+        <Text style={styles.totalValue}>
           {foods.reduce((sum, food) => sum + (parseInt(food.calories) || 0), 0)} cal
         </Text>
       </View>
     </ScrollView>
-    </KeyboardAvoidingView>
-    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  keyboardAvoid: {
-    flex: 1,
-  },
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 40,
   },
   header: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
+    justifyContent: 'space-between',
   },
-  cancelButton: {
-    color: '#007AFF',
-    fontSize: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  saveButton: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  disabled: {
-    opacity: 0.5,
-  },
+  backButton: { fontSize: 14, fontWeight: '500' },
+  title: { fontSize: 20, fontWeight: '700' },
+  content: { padding: 16, paddingBottom: 32 },
   mealTypeContainer: {
-    marginBottom: 25,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
   },
   mealTypeTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#333',
     marginBottom: 10,
   },
   mealTypeSelector: {
@@ -547,19 +479,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   mealTypeButton: {
-    flex: 1,
-    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: 8,
+    borderRadius: 999,
     borderWidth: 1,
     marginHorizontal: 3,
     alignItems: 'center',
+    backgroundColor: 'white',
   },
   mealTypeButtonActive: {
     backgroundColor: '#007AFF',
     borderColor: '#007AFF',
   },
   mealTypeButtonText: {
+    color: '#666',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -567,12 +500,14 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   foodInputContainer: {
+    backgroundColor: 'white',
     padding: 20,
     borderRadius: 12,
     marginBottom: 20,
     borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  foodInputHeader: {
+  foodHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 15,
@@ -580,6 +515,7 @@ const styles = StyleSheet.create({
   foodInputTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#333',
   },
   removeButton: {
     color: '#FF3B30',
@@ -589,15 +525,21 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
+    color: '#333',
     marginBottom: 8,
     marginTop: 10,
   },
+  foodTitle: { fontSize: 14, fontWeight: '600' },
+  removeButton: { fontSize: 13, fontWeight: '500' },
+  inputLabel: { fontSize: 13, marginTop: 10, marginBottom: 4 },
   input: {
+    backgroundColor: '#f8f8f8',
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 8,
     fontSize: 16,
     borderWidth: 1,
+    borderColor: '#e0e0e0',
     marginBottom: 15,
   },
   loadingContainer: {
@@ -606,11 +548,8 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#f0f8ff',
     borderRadius: 8,
-    marginBottom: 10,
-  },
-  loadingText: {
-    marginLeft: 10,
-    color: '#007AFF',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     fontSize: 14,
   },
   noResultsContainer: {
@@ -701,44 +640,44 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   smallInput: {
+    backgroundColor: '#f8f8f8',
     paddingHorizontal: 10,
     paddingVertical: 10,
     borderRadius: 8,
     fontSize: 14,
     borderWidth: 1,
+    borderColor: '#e0e0e0',
     textAlign: 'center',
   },
   addFoodButton: {
-    backgroundColor: '#E3F2FD',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 20,
+    marginTop: 4,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#2196F3',
-    borderStyle: 'dashed',
+    borderRadius: 999,
+    alignItems: 'center',
+    paddingVertical: 10,
   },
-  addFoodButtonText: {
-    color: '#2196F3',
-    fontSize: 16,
-    fontWeight: '500',
-  },
+  addFoodButtonText: { fontSize: 14, fontWeight: '500' },
   totalContainer: {
-    padding: 20,
+    padding: 16,
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+    borderWidth: 1,
   },
   totalLabel: {
     fontSize: 18,
     fontWeight: '600',
+    color: '#333',
   },
   totalValue: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#007AFF',
   },
+  saveButtonText: { fontSize: 16, fontWeight: '600' },
 });
 
 export default AddMealScreen;

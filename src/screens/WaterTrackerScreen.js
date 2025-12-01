@@ -1,6 +1,6 @@
 // src/screens/WaterTrackerScreen.js
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from './ThemeContext';
 import { lightTheme, darkTheme } from './themes';
+
+// 🔹 NEW: auth + gamification imports
+import { auth } from '../services/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { recordWaterGamification } from '../gamification/engine';
 
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -32,6 +37,16 @@ export default function WaterTrackerScreen() {
     { label: 'Sun', glasses: 3 },
   ]);
 
+  // 🔹 NEW: track current user for gamification
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return unsubscribe;
+  }, []);
+
   const todayLabel = useMemo(() => {
     const jsDay = new Date().getDay(); // 0=Sun..6=Sat
     if (jsDay === 0) return 'Sun';
@@ -43,7 +58,8 @@ export default function WaterTrackerScreen() {
     return Math.min((todayGlasses / dailyGoal) * 100, 150);
   }, [todayGlasses, dailyGoal]);
 
-  function updateTodayGlasses(delta) {
+  // 🔹 UPDATED: now async + calls gamification only when adding (+1)
+  async function updateTodayGlasses(delta) {
     setTodayGlasses((prev) => {
       const next = Math.max(0, prev + delta);
 
@@ -55,6 +71,15 @@ export default function WaterTrackerScreen() {
 
       return next;
     });
+
+    // Only count positive increments as a "water event"
+    if (delta > 0 && currentUser?.uid) {
+      try {
+        await recordWaterGamification(currentUser.uid);
+      } catch (err) {
+        console.log('Error updating water gamification:', err);
+      }
+    }
   }
 
   function updateGoal(delta) {
