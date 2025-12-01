@@ -12,6 +12,7 @@ import {
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { searchFoods } from '../services/foodApi';
+import { useTheme, lightTheme, darkTheme } from './ThemeContext';
 
   const AddMealScreen = ({ navigation, route }) => {
   
@@ -35,6 +36,15 @@ import { searchFoods } from '../services/foodApi';
   const [searchSuggestions, setSearchSuggestions] = useState({});
   const [searchLoading, setSearchLoading] = useState({});
   const searchTimeouts = useRef({});
+  
+  // Get theme with proper error handling
+  const themeContext = useTheme();
+  const theme = themeContext?.theme || 'light';
+  const colors = (theme === 'light' ? lightTheme : darkTheme) || {
+    accent: '#007AFF',
+    text: '#333',
+    background: '#f5f5f5'
+  };
 
   const addFoodField = () => setFoods([...foods, { id: Date.now(), name: '', calories: '', protein: 0, carbs: 0, fat: 0 }]);
   const removeFoodField = (id) => foods.length > 1 && setFoods(foods.filter((food) => food.id !== id));
@@ -486,13 +496,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  title: { fontSize: 18, fontWeight: 'bold' },
-  cancelButton: { fontSize: 16 },
-  saveButton: { fontSize: 16, fontWeight: '600' },
-  scrollContent: { padding: 20, paddingBottom: 40 },
-  mealTypeContainer: { marginBottom: 25 },
-  mealTypeTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10 },
-  mealTypeSelector: { flexDirection: 'row', justifyContent: 'space-between' },
   mealTypeButton: {
     flex: 1,
     paddingVertical: 10,
@@ -520,6 +523,8 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   foodInputHeader: {
     flexDirection: 'row',
@@ -541,6 +546,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     marginBottom: 8,
+    marginTop: 10,
   },
   input: {
     backgroundColor: '#f8f8f8',
@@ -677,19 +683,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  mealTypeButtonText: { fontSize: 14, fontWeight: '500' },
-  foodInputContainer: { padding: 20, borderRadius: 12, marginBottom: 20, borderWidth: 1 },
-  foodInputHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
-  foodInputTitle: { fontSize: 16, fontWeight: '600' },
-  removeButton: { fontSize: 14, fontWeight: '500' },
-  inputLabel: { fontSize: 14, fontWeight: '500', marginBottom: 8, marginTop: 10 },
-  input: { paddingHorizontal: 15, paddingVertical: 12, borderRadius: 8, fontSize: 16, borderWidth: 1 },
-  suggestionsTitle: { fontSize: 14, fontWeight: '500', marginTop: 15, marginBottom: 10 },
-  suggestionChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6, marginRight: 8, minWidth: 80 },
-  suggestionText: { fontSize: 12, fontWeight: '500', textAlign: 'center', marginBottom: 2 },
-  suggestionCalories: { fontSize: 10 },
-  addFoodButton: { padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 20, borderWidth: 1 },
-  addFoodButtonText: { fontSize: 16, fontWeight: '500' },
   totalContainer: {
     padding: 20,
     borderRadius: 12,
