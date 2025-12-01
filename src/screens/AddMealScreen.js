@@ -318,6 +318,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+    marginTop: 10,
   },
   foodTitle: { fontSize: 14, fontWeight: '600' },
   removeButton: { fontSize: 13, fontWeight: '500' },
