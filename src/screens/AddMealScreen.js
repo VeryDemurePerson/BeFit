@@ -1,5 +1,4 @@
-// src/screens/AddMealScreen.js — Light/Dark Mode + Gamification
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,49 +8,75 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { searchFoods } from '../services/foodApi';
-import { useTheme, lightTheme, darkTheme } from './ThemeContext';
+import { useTheme } from './ThemeContext';
+import { lightTheme, darkTheme } from './themes';
+import { Ionicons } from '@expo/vector-icons';
 
-  const AddMealScreen = ({ navigation, route }) => {
-  
-    const { mealType = 'Breakfast', meal = null, isEditing = false } = route.params || {};
+const AddMealScreen = ({ navigation, route }) => {
+  const { mealType = 'Breakfast', meal = null, isEditing = false } = route.params || {};
 
-    useEffect(() => {
-      if (isEditing && meal) {
-        setFoods(meal.foods.map(f => ({
-          id: Date.now() + Math.random(),
-          name: f.name,
-          calories: f.calories.toString(),
-          protein: f.protein || 0,
-          carbs: f.carbs || 0,
-          fat: f.fat || 0
-        })));
-      }
-  }, [isEditing, meal]);
-
-  const [foods, setFoods] = useState([{ id: Date.now(), name: '', calories: '' }]);
+  const [foods, setFoods] = useState([{ 
+    id: Date.now(), 
+    name: '', 
+    calories: '', 
+    protein: 0, 
+    carbs: 0, 
+    fat: 0 
+  }]);
   const [loading, setLoading] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState({});
   const [searchLoading, setSearchLoading] = useState({});
   const searchTimeouts = useRef({});
   
-  // Get theme with proper error handling
   const themeContext = useTheme();
   const theme = themeContext?.theme || 'light';
   const colors = (theme === 'light' ? lightTheme : darkTheme) || {
-    accent: '#007AFF',
+    accent: '#6366F1',
     text: '#333',
-    background: '#f5f5f5'
+    background: '#f5f5f5',
+    cardBackground: '#ffffff',
+    inputBackground: '#f8f8f8',
+    border: '#e0e0e0',
+    placeholderText: '#999',
+    subtext: '#666'
   };
 
-  const addFoodField = () => setFoods([...foods, { id: Date.now(), name: '', calories: '', protein: 0, carbs: 0, fat: 0 }]);
-  const removeFoodField = (id) => foods.length > 1 && setFoods(foods.filter((food) => food.id !== id));
+  useEffect(() => {
+    if (isEditing && meal) {
+      setFoods(meal.foods.map(f => ({
+        id: Date.now() + Math.random(),
+        name: f.name,
+        calories: f.calories.toString(),
+        protein: f.protein || 0,
+        carbs: f.carbs || 0,
+        fat: f.fat || 0
+      })));
+    }
+  }, [isEditing, meal]);
+
+  const addFoodField = () => setFoods([...foods, { 
+    id: Date.now(), 
+    name: '', 
+    calories: '', 
+    protein: 0, 
+    carbs: 0, 
+    fat: 0 
+  }]);
+  
+  const removeFoodField = (id) => {
+    if (foods.length > 1) {
+      setFoods(foods.filter((food) => food.id !== id));
+    }
+  };
 
   const performSearch = useCallback(async (text, id) => {
-    console.log('performSearch called with:', text, 'for id:', id);
     const trimmedText = text?.trim();
     if (!trimmedText || trimmedText.length < 2 || !/[a-zA-Z0-9]/.test(trimmedText)) {
       setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
@@ -62,8 +87,6 @@ import { useTheme, lightTheme, darkTheme } from './ThemeContext';
     setSearchLoading(prev => ({ ...prev, [id]: true }));
     try {
       const results = await searchFoods(trimmedText);
-      console.log('Search completed, got', results?.length || 0, 'results for id', id);
-      
       setSearchSuggestions(prev => ({ ...prev, [id]: results || [] }));
     } catch (error) {
       console.error('Search error:', error);
@@ -74,9 +97,6 @@ import { useTheme, lightTheme, darkTheme } from './ThemeContext';
   }, []);
 
   const handleFoodNameChange = useCallback((text, id) => {
-    console.log('handleFoodNameChange called with:', text, 'for id:', id);
-    
-    // Update the food name immediately
     setFoods(prevFoods => 
       prevFoods.map((food) => 
         food.id === id ? { ...food, name: text } : food
@@ -85,18 +105,14 @@ import { useTheme, lightTheme, darkTheme } from './ThemeContext';
     
     if (searchTimeouts.current[id]) {
       clearTimeout(searchTimeouts.current[id]);
-      console.log('Cleared previous timeout for id:', id);
     }
     
     const trimmedText = text?.trim();
     if (trimmedText && trimmedText.length >= 2 && /[a-zA-Z0-9]/.test(trimmedText)) {
-      console.log('Setting timeout to search for:', trimmedText);
       searchTimeouts.current[id] = setTimeout(() => {
-        console.log('Timeout fired! Performing search for id:', id);
         performSearch(text, id);
       }, 400);
     } else {
-      console.log('Text too short or invalid, clearing suggestions for id:', id);
       setSearchSuggestions(prev => ({ ...prev, [id]: [] }));
       setSearchLoading(prev => ({ ...prev, [id]: false }));
     }
@@ -111,40 +127,59 @@ import { useTheme, lightTheme, darkTheme } from './ThemeContext';
   }, []);
 
   const saveMeal = async () => {
-    const validFoods = foods.filter((f) => f.name.trim() && f.calories);
-    if (!validFoods.length) return Alert.alert('Error', 'Please add at least one food item with calories');
+    const validFoods = foods.filter(food => food.name.trim() && food.calories);
+    if (validFoods.length === 0) {
+      return Alert.alert('Missing Information', 'Please add at least one food item with calories');
+    }
+
+    for (let food of validFoods) {
+      if (isNaN(food.calories) || parseInt(food.calories) < 0) {
+        return Alert.alert('Invalid Input', `Please enter a valid calorie value for ${food.name}`);
+      }
+    }
 
     setLoading(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      const ref = doc(db, 'nutrition', `${auth.currentUser.uid}_${today}`);
-      const docSnap = await getDoc(ref);
-      const existing = docSnap.exists()
-        ? docSnap.data()
-        : { meals: [], totalCalories: 0, nutrients: { protein: 0, carbs: 0, fat: 0, fiber: 0 } };
+      const nutritionDocRef = doc(db, 'nutrition', `${auth.currentUser.uid}_${today}`);
+      const nutritionDoc = await getDoc(nutritionDocRef);
+      const existingData = nutritionDoc.exists() ? nutritionDoc.data() : {
+        meals: [],
+        totalCalories: 0,
+        nutrients: { protein: 0, carbs: 0, fat: 0, fiber: 0 }
+      };
 
       const mealCalories = validFoods.reduce((sum, f) => sum + parseInt(f.calories), 0);
-      const est = {
-        protein: Math.round((mealCalories * 0.15) / 4),
-        carbs: Math.round((mealCalories * 0.5) / 4),
-        fat: Math.round((mealCalories * 0.35) / 9),
-        fiber: Math.round(mealCalories * 0.02),
-      };
+      const mealProtein = validFoods.reduce((sum, f) => sum + (f.protein || 0), 0);
+      const mealCarbs = validFoods.reduce((sum, f) => sum + (f.carbs || 0), 0);
+      const mealFat = validFoods.reduce((sum, f) => sum + (f.fat || 0), 0);
 
       const newMeal = {
         type: mealType,
         time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        foods: validFoods.map((f) => ({ name: f.name.trim(), calories: parseInt(f.calories) })),
-        calories: mealCalories,
+        foods: validFoods.map(f => ({
+          name: f.name.trim(),
+          calories: parseInt(f.calories),
+          protein: f.protein,
+          carbs: f.carbs,
+          fat: f.fat
+        })),
+        calories: mealCalories
+      };
+
+      let updatedMeals;
+      let updatedTotals = {
+        totalCalories: existingData.totalCalories,
+        protein: existingData.nutrients.protein,
+        carbs: existingData.nutrients.carbs,
+        fat: existingData.nutrients.fat,
       };
 
       if (isEditing && meal) {
-        // Replace the existing meal (by matching its type and time)
         updatedMeals = existingData.meals.map((m) =>
           m.type === meal.type && m.time === meal.time ? newMeal : m
         );
 
-        // Recalculate totals from scratch
         const totals = updatedMeals.reduce(
           (acc, m) => ({
             totalCalories: acc.totalCalories + m.calories,
@@ -157,7 +192,6 @@ import { useTheme, lightTheme, darkTheme } from './ThemeContext';
 
         updatedTotals = totals;
       } else {
-        // Add new meal
         updatedMeals = [...existingData.meals, newMeal];
         updatedTotals = {
           totalCalories: existingData.totalCalories + mealCalories,
@@ -171,42 +205,34 @@ import { useTheme, lightTheme, darkTheme } from './ThemeContext';
         meals: updatedMeals,
         totalCalories: updatedTotals.totalCalories,
         nutrients: {
-          protein: existing.nutrients.protein + est.protein,
-          carbs: existing.nutrients.carbs + est.carbs,
-          fat: existing.nutrients.fat + est.fat,
-          fiber: existing.nutrients.fiber + est.fiber,
+          protein: updatedTotals.protein,
+          carbs: updatedTotals.carbs,
+          fat: updatedTotals.fat,
+          fiber: existingData.nutrients.fiber
         },
         date: today,
         userId: auth.currentUser.uid,
         updatedAt: new Date(),
       };
 
-      await setDoc(ref, updated);
+      await setDoc(nutritionDocRef, updatedData);
 
-      // 🔥 Gamification: log a meal
-      try {
-        await recordMealGamification(auth.currentUser.uid);
-      } catch (e) {
-        console.log('Gamification (meal) error:', e);
-      }
-
-      Alert.alert('Success', 'Meal logged successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
+      Alert.alert('Success!', 'Meal logged successfully', [
+        { text: 'OK', onPress: () => navigation.navigate('Nutrition') }
       ]);
-    } catch (err) {
-      console.error('Error saving meal:', err);
-      Alert.alert('Error', `Failed to save meal: ${err.message}`);
+    } catch (error) {
+      console.error('Error saving meal:', error);
+      Alert.alert('Error', `Failed to save meal: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const FoodInput = ({ food }) => {
+  const FoodInput = ({ food, index }) => {
     const [localName, setLocalName] = useState(food.name);
     const suggestions = searchSuggestions[food.id] || [];
     const loadingSuggestions = searchLoading[food.id] || false;
 
-    // Sync local name when food name changes from outside (like from suggestion selection)
     useEffect(() => {
       if (food.name !== localName) {
         setLocalName(food.name);
@@ -219,12 +245,8 @@ import { useTheme, lightTheme, darkTheme } from './ThemeContext';
     };
 
     const handleSelectSuggestion = (item) => {
-      console.log('Selecting suggestion:', item.name);
-      
-      // Update local state immediately
       setLocalName(item.name);
       
-      // Update all food properties at once
       setFoods(prevFoods => 
         prevFoods.map((f) => 
           f.id === food.id ? {
@@ -238,7 +260,6 @@ import { useTheme, lightTheme, darkTheme } from './ThemeContext';
         )
       );
       
-      // Clear suggestions for this input
       setSearchSuggestions(prev => ({ ...prev, [food.id]: [] }));
     };
 
@@ -259,118 +280,191 @@ import { useTheme, lightTheme, darkTheme } from './ThemeContext';
     };
 
     return (
-      <View style={styles.foodInputContainer}>
-        <View style={styles.foodInputHeader}>
-          <Text style={styles.foodInputTitle}>Food Item</Text>
+      <View style={[styles.foodCard, { 
+        backgroundColor: colors.cardBackground, 
+        borderColor: colors.border,
+        shadowColor: theme === 'light' ? '#000' : '#fff',
+      }]}>
+        <View style={styles.foodCardHeader}>
+          <View style={styles.foodCardTitleRow}>
+            <Ionicons name="restaurant-outline" size={20} color={colors.accent} />
+            <Text style={[styles.foodCardTitle, { color: colors.text }]}>
+              Food Item {foods.length > 1 ? `#${index + 1}` : ''}
+            </Text>
+          </View>
           {foods.length > 1 && (
-            <TouchableOpacity onPress={() => removeFoodField(food.id)}>
-              <Text style={styles.removeButton}>Remove</Text>
+            <TouchableOpacity 
+              onPress={() => removeFoodField(food.id)}
+              style={[styles.removeButton, { backgroundColor: colors.danger + '15' }]}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.danger} />
             </TouchableOpacity>
           )}
         </View>
 
-        <Text style={styles.inputLabel}>Food Name</Text>
-        <TextInput
-          style={styles.input}
-          value={localName}
-          onChangeText={handleNameChange}
-          placeholder="e.g., Chicken breast"
-        />
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, { color: colors.text }]}>
+            Food Name <Text style={{ color: colors.danger }}>*</Text>
+          </Text>
+          <TextInput
+            style={[styles.input, { 
+              backgroundColor: colors.inputBackground, 
+              borderColor: colors.border, 
+              color: colors.text 
+            }]}
+            value={localName}
+            onChangeText={handleNameChange}
+            placeholder="e.g., Grilled chicken breast"
+            placeholderTextColor={colors.placeholderText}
+          />
+        </View>
 
         {loadingSuggestions && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#007AFF" />
-            <Text style={styles.loadingText}>Searching...</Text>
+          <View style={[styles.statusContainer, { backgroundColor: colors.accent + '10' }]}>
+            <ActivityIndicator size="small" color={colors.accent} />
+            <Text style={[styles.statusText, { color: colors.accent }]}>Searching foods...</Text>
           </View>
         )}
 
-        {!loadingSuggestions && suggestions.length === 0 && food.name.length >= 2 && (
-          <View style={styles.noResultsContainer}>
-            <Text style={styles.noResultsText}>No results found. Try a different search.</Text>
+        {!loadingSuggestions && suggestions.length === 0 && localName.length >= 2 && (
+          <View style={[styles.statusContainer, { backgroundColor: colors.warning + '10' }]}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.subtext} />
+            <Text style={[styles.statusText, { color: colors.subtext }]}>
+              No results. Try different keywords or enter manually.
+            </Text>
           </View>
         )}
 
         {suggestions.length > 0 && (
           <View style={styles.suggestionsWrapper}>
-            <Text style={styles.suggestionsHeader}>Tap to select:</Text>
-            <ScrollView style={styles.suggestionsBox} nestedScrollEnabled showsVerticalScrollIndicator={true}>
+            <Text style={[styles.suggestionsHeader, { color: colors.accent }]}>
+              <Ionicons name="search-outline" size={14} color={colors.accent} /> Suggested Foods
+            </Text>
+            <ScrollView 
+              style={[styles.suggestionsBox, { 
+                backgroundColor: colors.background,
+                borderColor: colors.border 
+              }]} 
+              nestedScrollEnabled 
+              showsVerticalScrollIndicator={true}
+            >
               {suggestions.map((item, i) => (
                 <TouchableOpacity
                   key={`suggestion-${food.id}-${i}`}
                   style={[
                     styles.suggestionItem,
+                    { 
+                      backgroundColor: colors.cardBackground,
+                      borderBottomColor: colors.border 
+                    },
                     i === suggestions.length - 1 && styles.suggestionItemLast
                   ]}
                   onPress={() => handleSelectSuggestion(item)}
                   activeOpacity={0.6}
                 >
                   <View style={styles.suggestionContent}>
-                    <Text style={styles.suggestionName} numberOfLines={2}>
+                    <Text style={[styles.suggestionName, { color: colors.text }]} numberOfLines={2}>
                       {item.name}
                     </Text>
                     <View style={styles.suggestionMacrosContainer}>
-                      <View style={styles.macroChip}>
-                        <Text style={styles.macroChipLabel}>Cal</Text>
-                        <Text style={styles.macroChipValue}>{item.calories}</Text>
+                      <View style={[styles.macroChip, { backgroundColor: colors.accent + '15' }]}>
+                        <Text style={[styles.macroChipLabel, { color: colors.accent }]}>Cal</Text>
+                        <Text style={[styles.macroChipValue, { color: colors.text }]}>
+                          {item.calories}
+                        </Text>
                       </View>
-                      <View style={styles.macroChip}>
-                        <Text style={styles.macroChipLabel}>P</Text>
-                        <Text style={styles.macroChipValue}>{item.protein}g</Text>
+                      <View style={[styles.macroChip, { backgroundColor: colors.inputBackground }]}>
+                        <Text style={[styles.macroChipLabel, { color: colors.subtext }]}>P</Text>
+                        <Text style={[styles.macroChipValue, { color: colors.text }]}>
+                          {item.protein}g
+                        </Text>
                       </View>
-                      <View style={styles.macroChip}>
-                        <Text style={styles.macroChipLabel}>C</Text>
-                        <Text style={styles.macroChipValue}>{item.carbs}g</Text>
+                      <View style={[styles.macroChip, { backgroundColor: colors.inputBackground }]}>
+                        <Text style={[styles.macroChipLabel, { color: colors.subtext }]}>C</Text>
+                        <Text style={[styles.macroChipValue, { color: colors.text }]}>
+                          {item.carbs}g
+                        </Text>
                       </View>
-                      <View style={styles.macroChip}>
-                        <Text style={styles.macroChipLabel}>F</Text>
-                        <Text style={styles.macroChipValue}>{item.fat}g</Text>
+                      <View style={[styles.macroChip, { backgroundColor: colors.inputBackground }]}>
+                        <Text style={[styles.macroChipLabel, { color: colors.subtext }]}>F</Text>
+                        <Text style={[styles.macroChipValue, { color: colors.text }]}>
+                          {item.fat}g
+                        </Text>
                       </View>
                     </View>
                   </View>
-                  <Text style={styles.chevron}>›</Text>
+                  <Ionicons name="chevron-forward" size={20} color={colors.subtext} />
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
         )}
 
-        <Text style={styles.inputLabel}>Calories</Text>
-        <TextInput
-          style={styles.input}
-          value={food.calories}
-          onChangeText={handleCaloriesChange}
-          placeholder="e.g., 200"
-          keyboardType="numeric"
-        />
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, { color: colors.text }]}>
+            Calories <Text style={{ color: colors.danger }}>*</Text>
+          </Text>
+          <TextInput
+            style={[styles.input, { 
+              backgroundColor: colors.inputBackground, 
+              borderColor: colors.border, 
+              color: colors.text 
+            }]}
+            value={food.calories}
+            onChangeText={handleCaloriesChange}
+            placeholder="e.g., 200"
+            placeholderTextColor={colors.placeholderText}
+            keyboardType="numeric"
+          />
+        </View>
 
+        <Text style={[styles.sectionLabel, { color: colors.text }]}>
+          Macronutrients (Optional)
+        </Text>
         <View style={styles.macrosContainer}>
           <View style={styles.macroInput}>
-            <Text style={styles.inputLabel}>Protein (g)</Text>
+            <Text style={[styles.macroLabel, { color: colors.subtext }]}>Protein (g)</Text>
             <TextInput
-              style={styles.smallInput}
+              style={[styles.smallInput, { 
+                backgroundColor: colors.inputBackground, 
+                borderColor: colors.border, 
+                color: colors.text 
+              }]}
               value={food.protein.toString()}
               onChangeText={(text) => handleMacroChange('protein', text)}
               placeholder="0"
+              placeholderTextColor={colors.placeholderText}
               keyboardType="numeric"
             />
           </View>
           <View style={styles.macroInput}>
-            <Text style={styles.inputLabel}>Carbs (g)</Text>
+            <Text style={[styles.macroLabel, { color: colors.subtext }]}>Carbs (g)</Text>
             <TextInput
-              style={styles.smallInput}
+              style={[styles.smallInput, { 
+                backgroundColor: colors.inputBackground, 
+                borderColor: colors.border, 
+                color: colors.text 
+              }]}
               value={food.carbs.toString()}
               onChangeText={(text) => handleMacroChange('carbs', text)}
               placeholder="0"
+              placeholderTextColor={colors.placeholderText}
               keyboardType="numeric"
             />
           </View>
           <View style={styles.macroInput}>
-            <Text style={styles.inputLabel}>Fat (g)</Text>
+            <Text style={[styles.macroLabel, { color: colors.subtext }]}>Fat (g)</Text>
             <TextInput
-              style={styles.smallInput}
+              style={[styles.smallInput, { 
+                backgroundColor: colors.inputBackground, 
+                borderColor: colors.border, 
+                color: colors.text 
+              }]}
               value={food.fat.toString()}
               onChangeText={(text) => handleMacroChange('fat', text)}
               placeholder="0"
+              placeholderTextColor={colors.placeholderText}
               keyboardType="numeric"
             />
           </View>
@@ -379,305 +473,448 @@ import { useTheme, lightTheme, darkTheme } from './ThemeContext';
     );
   };
 
+  const totalCalories = foods.reduce((sum, food) => sum + (parseInt(food.calories) || 0), 0);
+  const totalProtein = foods.reduce((sum, food) => sum + (food.protein || 0), 0);
+  const totalCarbs = foods.reduce((sum, food) => sum + (food.carbs || 0), 0);
+  const totalFat = foods.reduce((sum, food) => sum + (food.fat || 0), 0);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={[styles.cancelButton, { color: colors.accent }]}>Cancel</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Add {mealType}</Text>
-        <TouchableOpacity onPress={saveMeal} disabled={loading}>
-          <Text style={[styles.saveButton, { color: colors.accent, opacity: loading ? 0.5 : 1 }]}>
-            {loading ? 'Saving...' : 'Save'}
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <View style={[styles.header, { 
+          backgroundColor: colors.cardBackground, 
+          borderBottomColor: colors.border 
+        }]}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Nutrition')} 
+            style={styles.headerButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={28} color={colors.subtext} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {isEditing ? 'Edit' : 'Add'} {mealType}
           </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.mealTypeContainer}>
-        <Text style={styles.mealTypeTitle}>Meal Type</Text>
-        <View style={styles.mealTypeSelector}>
-          {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((type) => (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.mealTypeButton,
-                mealType === type && styles.mealTypeButtonActive
-              ]}
-              onPress={() => navigation.setParams({ mealType: type })}
-            >
-              <Text style={[
-                styles.mealTypeButtonText,
-                mealType === type && styles.mealTypeButtonTextActive
-              ]}>
-                {type}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <TouchableOpacity 
+            onPress={saveMeal} 
+            disabled={loading} 
+            style={[styles.headerButton, styles.saveButtonContainer, { 
+              backgroundColor: colors.accent,
+              opacity: loading ? 0.6 : 1 
+            }]}
+            activeOpacity={0.7}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.saveButtonText}>Save</Text>
+            )}
+          </TouchableOpacity>
         </View>
-      </View>
 
-        {foods.map((food, i) => (
-          <FoodInput key={food.id} food={food} index={i} />
-        ))}
-
-        <TouchableOpacity
-          style={[
-            styles.addFoodButton,
-            { borderColor: colors.accent, backgroundColor: colors.card },
-          ]}
-          onPress={addFoodField}
+        <ScrollView 
+          style={[styles.container, { backgroundColor: colors.background }]} 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={true}
         >
-          <Text style={[styles.addFoodButtonText, { color: colors.accent }]}>
-            + Add Another Food
-          </Text>
-        </TouchableOpacity>
+          <View style={styles.mealTypeContainer}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Ionicons name="time-outline" size={18} color={colors.accent} /> Meal Type
+            </Text>
+            <View style={styles.mealTypeSelector}>
+              {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.mealTypeButton,
+                    { 
+                      backgroundColor: mealType === type ? colors.accent : colors.cardBackground, 
+                      borderColor: mealType === type ? colors.accent : colors.border,
+                      shadowColor: theme === 'light' ? '#000' : '#fff',
+                    },
+                  ]}
+                  onPress={() => navigation.setParams({ mealType: type })}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.mealTypeButtonText,
+                    { color: mealType === type ? '#FFFFFF' : colors.text },
+                  ]}>
+                    {type}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalLabel}>Total Calories:</Text>
-        <Text style={styles.totalValue}>
-          {foods.reduce((sum, food) => sum + (parseInt(food.calories) || 0), 0)} cal
-        </Text>
-      </View>
-    </ScrollView>
+          {foods.map((food, index) => (
+            <FoodInput key={food.id} food={food} index={index} />
+          ))}
+
+          <TouchableOpacity 
+            style={[styles.addFoodButton, { 
+              backgroundColor: colors.accent + '10', 
+              borderColor: colors.accent 
+            }]} 
+            onPress={addFoodField}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
+            <Text style={[styles.addFoodButtonText, { color: colors.accent }]}>
+              Add Another Food Item
+            </Text>
+          </TouchableOpacity>
+
+          {totalCalories > 0 && (
+            <View style={[styles.summaryCard, { 
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.accent,
+              shadowColor: theme === 'light' ? '#000' : '#fff',
+            }]}>
+              <View style={styles.summaryHeader}>
+                <Ionicons name="calculator-outline" size={20} color={colors.accent} />
+                <Text style={[styles.summaryTitle, { color: colors.text }]}>Meal Summary</Text>
+              </View>
+              
+              <View style={[styles.totalCaloriesRow, { backgroundColor: colors.accent + '10' }]}>
+                <Text style={[styles.totalLabel, { color: colors.text }]}>Total Calories</Text>
+                <Text style={[styles.totalValue, { color: colors.accent }]}>
+                  {totalCalories} cal
+                </Text>
+              </View>
+
+              {(totalProtein > 0 || totalCarbs > 0 || totalFat > 0) && (
+                <View style={styles.macrosSummary}>
+                  {totalProtein > 0 && (
+                    <View style={styles.macroSummaryItem}>
+                      <Text style={[styles.macroSummaryLabel, { color: colors.subtext }]}>
+                        Protein
+                      </Text>
+                      <Text style={[styles.macroSummaryValue, { color: colors.text }]}>
+                        {totalProtein.toFixed(1)}g
+                      </Text>
+                    </View>
+                  )}
+                  {totalCarbs > 0 && (
+                    <View style={styles.macroSummaryItem}>
+                      <Text style={[styles.macroSummaryLabel, { color: colors.subtext }]}>
+                        Carbs
+                      </Text>
+                      <Text style={[styles.macroSummaryValue, { color: colors.text }]}>
+                        {totalCarbs.toFixed(1)}g
+                      </Text>
+                    </View>
+                  )}
+                  {totalFat > 0 && (
+                    <View style={styles.macroSummaryItem}>
+                      <Text style={[styles.macroSummaryLabel, { color: colors.subtext }]}>
+                        Fat
+                      </Text>
+                      <Text style={[styles.macroSummaryValue, { color: colors.text }]}>
+                        {totalFat.toFixed(1)}g
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 16,
+    paddingBottom: 100,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  backButton: { fontSize: 14, fontWeight: '500' },
-  title: { fontSize: 20, fontWeight: '700' },
-  content: { padding: 16, paddingBottom: 32 },
-  mealTypeContainer: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+  headerButton: {
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  mealTypeTitle: {
+  saveButtonContainer: {
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
+  },
+  mealTypeContainer: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    marginBottom: 12,
   },
   mealTypeSelector: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 8,
   },
   mealTypeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    marginHorizontal: 3,
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 2,
     alignItems: 'center',
-    backgroundColor: 'white',
-  },
-  mealTypeButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    justifyContent: 'center',
+    minHeight: 44,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   mealTypeButtonText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
   },
-  mealTypeButtonTextActive: {
-    color: 'white',
-  },
-  foodInputContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
+  foodCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  foodHeader: {
+  foodCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  foodInputTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  removeButton: {
-    color: '#FF3B30',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
-    marginTop: 10,
-  },
-  foodTitle: { fontSize: 14, fontWeight: '600' },
-  removeButton: { fontSize: 13, fontWeight: '500' },
-  inputLabel: { fontSize: 13, marginTop: 10, marginBottom: 4 },
-  input: {
-    backgroundColor: '#f8f8f8',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 8,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    marginBottom: 15,
-  },
-  loadingContainer: {
+  foodCardTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#f0f8ff',
+    gap: 8,
+  },
+  foodCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  removeButton: {
+    padding: 8,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 14,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  noResultsContainer: {
-    padding: 10,
-    backgroundColor: '#fff3cd',
-    borderRadius: 8,
-    marginBottom: 10,
+  inputGroup: {
+    marginBottom: 16,
   },
-  noResultsText: {
-    color: '#856404',
-    fontSize: 13,
-  },
-  suggestionsHeader: {
-    fontSize: 13,
-    color: '#007AFF',
-    marginBottom: 8,
+  inputLabel: {
+    fontSize: 15,
     fontWeight: '600',
+    marginBottom: 8,
+  },
+  input: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 10,
+    fontSize: 16,
+    borderWidth: 1.5,
+    minHeight: 50,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  statusText: {
+    fontSize: 14,
+    flex: 1,
   },
   suggestionsWrapper: {
-    marginBottom: 15,
+    marginBottom: 16,
+  },
+  suggestionsHeader: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   suggestionsBox: {
-    backgroundColor: '#FAFAFA',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
-    overflow: 'hidden',
-    maxHeight: 300,
+    maxHeight: 280,
   },
   suggestionItem: {
     padding: 14,
-    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 68,
   },
   suggestionItemLast: {
     borderBottomWidth: 0,
   },
   suggestionContent: {
     flex: 1,
-    marginRight: 8,
+    marginRight: 12,
   },
   suggestionName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#1A1A1A',
     marginBottom: 8,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   suggestionMacrosContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   macroChip: {
-    backgroundColor: '#F5F5F5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
   macroChipLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#666',
+    fontSize: 12,
+    fontWeight: '700',
   },
   macroChipValue: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#1A1A1A',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  chevron: {
-    fontSize: 24,
-    color: '#C7C7C7',
-    fontWeight: '300',
+  sectionLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 12,
   },
   macrosContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 5,
+    gap: 10,
   },
   macroInput: {
     flex: 1,
-    marginHorizontal: 5,
+  },
+  macroLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
   },
   smallInput: {
-    backgroundColor: '#f8f8f8',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderRadius: 8,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    fontSize: 15,
+    borderWidth: 1.5,
     textAlign: 'center',
+    minHeight: 44,
   },
   addFoodButton: {
-    marginTop: 4,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderRadius: 999,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-  },
-  addFoodButtonText: { fontSize: 14, fontWeight: '500' },
-  totalContainer: {
+    justifyContent: 'center',
+    gap: 8,
     padding: 16,
     borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    marginBottom: 20,
+    minHeight: 56,
+  },
+  addFoodButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  summaryCard: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    marginBottom: 20,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  totalCaloriesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
   },
   totalLabel: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#333',
   },
   totalValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    fontSize: 28,
+    fontWeight: '800',
   },
-  saveButtonText: { fontSize: 16, fontWeight: '600' },
+  macrosSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 12,
+  },
+  macroSummaryItem: {
+    alignItems: 'center',
+  },
+  macroSummaryLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  macroSummaryValue: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
 });
 
 export default AddMealScreen;
