@@ -1,21 +1,31 @@
 import React, { useState } from "react";
+// src/screens/EditProfileScreen.js
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  TouchableOpacity,
+  ScrollView,
   TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Alert,
   ScrollView,
 } from "react-native";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../services/firebase";
+} from 'react-native';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../services/firebase';
+import { useTheme } from './ThemeContext';
+import { lightTheme, darkTheme } from './themes';
 
-const EditGoalScreen = ({ navigation, route }) => {
-  const { goalType, currentValue } = route.params;
-  const [newValue, setNewValue] = useState(currentValue.toString());
-  const [loading, setLoading] = useState(false);
+const EditProfileScreen = ({ navigation }) => {
+  const { theme } = useTheme();
+  const colors = theme === 'light' ? lightTheme : darkTheme;
 
   const getGoalTitle = (goalType) => {
     switch (goalType) {
@@ -74,16 +84,66 @@ const EditGoalScreen = ({ navigation, route }) => {
         return ["8", "12", "16", "20"];
       default:
         return [];
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Profile fields
+  const [fullName, setFullName] = useState('');
+  const [age, setAge] = useState('');
+  const [heightCm, setHeightCm] = useState('');
+  const [weightKg, setWeightKg] = useState('');
+  const [goal, setGoal] = useState('');
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        const ref = doc(db, 'users', user.uid);
+        const snap = await getDoc(ref);
+
+        if (snap.exists()) {
+          const data = snap.data();
+          setFullName(data.fullName || data.name || '');
+          setAge(data.age ? String(data.age) : '');
+          setHeightCm(data.heightCm ? String(data.heightCm) : '');
+          setWeightKg(data.weightKg ? String(data.weightKg) : '');
+          setGoal(data.goal || data.fitnessGoal || '');
+        } else {
+          // If no profile doc yet, pre-fill name from auth if available
+          setFullName(user.displayName || '');
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        Alert.alert('Error', 'Failed to load profile information.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to edit your profile.');
+      return;
     }
-  };
 
   const updateGoal = async () => {
     if (!newValue || isNaN(parseInt(newValue)) || parseInt(newValue) < 1) {
       Alert.alert("Error", "Please enter a valid number greater than 0");
+    if (!fullName.trim()) {
+      Alert.alert('Missing name', 'Please enter your name.');
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
     try {
       const userRef = doc(db, "users", auth.currentUser.uid);
 
@@ -94,12 +154,20 @@ const EditGoalScreen = ({ navigation, route }) => {
         // Get existing goals and update only the specific goal
         const existingData = userDoc.data();
         const currentGoals = existingData.goals || {};
+      const ref = doc(db, 'users', user.uid);
 
-        // Update only the specific goal, keeping all others
-        const updatedGoals = {
-          ...currentGoals,
-          [goalType]: parseInt(newValue),
-        };
+      const profileData = {
+        fullName: fullName.trim(),
+        age: age ? Number(age) : null,
+        heightCm: heightCm ? Number(heightCm) : null,
+        weightKg: weightKg ? Number(weightKg) : null,
+        goal: goal.trim(),
+        updatedAt: new Date(),
+        userId: user.uid,
+        email: user.email || null,
+      };
+
+      await setDoc(ref, profileData, { merge: true });
 
         // Update the document with the merged goals
         await updateDoc(userRef, {
@@ -122,14 +190,17 @@ const EditGoalScreen = ({ navigation, route }) => {
       Alert.alert("Success", "Goal updated successfully!", [
         {
           text: "OK",
+      Alert.alert('Saved', 'Your profile has been updated.', [
+        {
+          text: 'OK',
           onPress: () => navigation.goBack(),
         },
       ]);
     } catch (error) {
-      Alert.alert("Error", `Failed to update goal: ${error.message}`);
-      console.error("Error updating goal:", error);
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Failed to save profile changes. Please try again.');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -151,11 +222,28 @@ const EditGoalScreen = ({ navigation, route }) => {
       </Text>
     </TouchableOpacity>
   );
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={[styles.loadingText, { color: colors.subtext }]}>
+            Loading profile...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.cancelButton}>Cancel</Text>
         </TouchableOpacity>
@@ -164,7 +252,10 @@ const EditGoalScreen = ({ navigation, route }) => {
           <Text style={[styles.saveButton, loading && styles.disabled]}>
             {loading ? "Saving..." : "Save"}
           </Text>
+          <Text style={[styles.headerButton, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Profile</Text>
+        <View style={{ width: 60 }} />
       </View>
 
       {/* Content */}
@@ -178,36 +269,115 @@ const EditGoalScreen = ({ navigation, route }) => {
           <Text style={styles.goalTitle}>{getGoalTitle(goalType)}</Text>
           <Text style={styles.goalHint}>{getGoalHint(goalType)}</Text>
         </View>
-
-        {/* Current Value Display */}
-        <View style={styles.currentValueContainer}>
-          <Text style={styles.currentValueLabel}>Current Goal:</Text>
-          <Text style={styles.currentValue}>{currentValue}</Text>
-        </View>
-
-        {/* Input Field */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>New Goal Value</Text>
-          <TextInput
-            style={styles.input}
-            value={newValue}
-            onChangeText={setNewValue}
-            keyboardType="numeric"
-            placeholder="Enter goal value"
-            returnKeyType="done"
-            autoFocus={true}
-          />
-        </View>
-
-        {/* Quick Suggestions */}
-        <View style={styles.suggestionsContainer}>
-          <Text style={styles.suggestionsTitle}>Quick Select:</Text>
-          <View style={styles.suggestionsGrid}>
-            {getSuggestions(goalType).map((suggestion) => (
-              <SuggestionButton key={suggestion} value={suggestion} />
-            ))}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Name */}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.label, { color: colors.subtext }]}>Full Name</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder="Your name"
+              placeholderTextColor={colors.subtext}
+            />
           </View>
-        </View>
+
+          {/* Basic info */}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Basic Info
+            </Text>
+
+            <View style={styles.row}>
+              <View style={styles.fieldHalf}>
+                <Text style={[styles.label, { color: colors.subtext }]}>Age</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.input,
+                      borderColor: colors.border,
+                      color: colors.text,
+                    },
+                  ]}
+                  value={age}
+                  onChangeText={setAge}
+                  placeholder="e.g. 22"
+                  placeholderTextColor={colors.subtext}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.fieldHalf}>
+                <Text style={[styles.label, { color: colors.subtext }]}>
+                  Height (cm)
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.input,
+                      borderColor: colors.border,
+                      color: colors.text,
+                    },
+                  ]}
+                  value={heightCm}
+                  onChangeText={setHeightCm}
+                  placeholder="e.g. 165"
+                  placeholderTextColor={colors.subtext}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.fieldHalf}>
+                <Text style={[styles.label, { color: colors.subtext }]}>
+                  Weight (kg)
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.input,
+                      borderColor: colors.border,
+                      color: colors.text,
+                    },
+                  ]}
+                  value={weightKg}
+                  onChangeText={setWeightKg}
+                  placeholder="e.g. 60"
+                  placeholderTextColor={colors.subtext}
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={[styles.fieldHalf, { opacity: 0 }]} />
+            </View>
+          </View>
 
         {/* Goal Tips */}
         <View style={styles.tipsContainer}>
@@ -264,30 +434,92 @@ const EditGoalScreen = ({ navigation, route }) => {
           )}
         </View>
       </ScrollView>
+          {/* Goals */}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Fitness Goal
+            </Text>
+            <Text style={[styles.helperText, { color: colors.subtext }]}>
+              (Examples: "Build muscle", "Lose 5kg", "Run 5km", "Stay consistent 3x/week")
+            </Text>
+            <TextInput
+              style={[
+                styles.textArea,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={goal}
+              onChangeText={setGoal}
+              placeholder="Describe your main goal..."
+              placeholderTextColor={colors.subtext}
+              multiline
+            />
+          </View>
+
+          {/* Save button */}
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              {
+                backgroundColor: saving ? colors.border : colors.accent,
+                opacity: saving ? 0.7 : 1,
+              },
+            ]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            <Text style={styles.saveButtonText}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
+
+export default EditProfileScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
+  // Loading
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 8,
+    fontSize: 14,
+  },
+  // Header
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: "white",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   cancelButton: {
     color: "#007AFF",
     fontSize: 16,
+  headerButton: {
+    fontSize: 14,
+    fontWeight: '500',
   },
-  title: {
+  headerTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
@@ -299,7 +531,9 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
+    fontWeight: '700',
   },
+  // Content
   content: {
     flex: 1,
   },
@@ -348,9 +582,18 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     color: "#007AFF",
+    padding: 16,
+    paddingBottom: 32,
   },
-  inputContainer: {
-    marginBottom: 30,
+  card: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 12,
+    marginBottom: 4,
   },
   inputLabel: {
     fontSize: 16,
@@ -388,21 +631,39 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#ddd",
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  helperText: {
+    fontSize: 11,
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    fontSize: 14,
+    minHeight: 70,
+    textAlignVertical: 'top',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 8,
+  },
+  fieldHalf: {
     flex: 1,
-    marginHorizontal: 5,
-    alignItems: "center",
-  },
-  suggestionButtonActive: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
-  },
-  suggestionText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  suggestionTextActive: {
-    color: "white",
   },
   tipsContainer: {
     backgroundColor: "#E3F2FD",
@@ -424,3 +685,15 @@ const styles = StyleSheet.create({
 });
 
 export default EditGoalScreen;
+  saveButton: {
+    marginTop: 8,
+    borderRadius: 999,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+});
