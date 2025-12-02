@@ -3,6 +3,9 @@ import i18n from "i18n-js";
 import * as Localization from "expo-localization";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// Supported language codes in the app
+const SUPPORTED_LANGUAGES = ["en", "vi", "tl"];
+
 // Define translations
 const translations = {
   en: {
@@ -406,18 +409,34 @@ const translations = {
 // Set i18n configuration
 i18n.translations = translations;
 i18n.fallbacks = true;
+i18n.defaultLocale = "en";
+
+/**
+ * Map device locale (e.g. "en-US", "vi-VN", "fil-PH") to one of our supported codes.
+ */
+const mapDeviceLocaleToAppLocale = (deviceLocale) => {
+  const lower = (deviceLocale || "").toLowerCase();
+
+  if (lower.startsWith("vi")) return "vi";
+  if (lower.startsWith("tl") || lower.startsWith("fil")) return "tl";
+  return "en";
+};
 
 // Function to initialize language
 export const initializeLanguage = async () => {
   try {
     const savedLanguage = await AsyncStorage.getItem("userLanguage");
-    if (savedLanguage) {
+
+    if (savedLanguage && SUPPORTED_LANGUAGES.includes(savedLanguage)) {
       i18n.locale = savedLanguage;
-    } else {
-      // Get device locale
-      const deviceLocale = Localization.locale;
-      i18n.locale = deviceLocale.startsWith("vi") ? "vi" : "en";
+      return;
     }
+
+    // Get device locale from expo-localization
+    const deviceLocale = Localization.locale;
+    const appLocale = mapDeviceLocaleToAppLocale(deviceLocale);
+
+    i18n.locale = appLocale;
   } catch (error) {
     console.error("Error initializing language:", error);
     i18n.locale = "en";
@@ -427,8 +446,12 @@ export const initializeLanguage = async () => {
 // Function to change language
 export const changeLanguage = async (languageCode) => {
   try {
-    i18n.locale = languageCode;
-    await AsyncStorage.setItem("userLanguage", languageCode);
+    const lang = SUPPORTED_LANGUAGES.includes(languageCode)
+      ? languageCode
+      : "en";
+
+    i18n.locale = lang;
+    await AsyncStorage.setItem("userLanguage", lang);
   } catch (error) {
     console.error("Error changing language:", error);
   }
@@ -436,5 +459,8 @@ export const changeLanguage = async (languageCode) => {
 
 // Function to get current language
 export const getCurrentLanguage = () => i18n.locale;
+
+// Optional convenience wrapper: i18n.t("key")
+export const t = (key, options) => i18n.t(key, options);
 
 export default i18n;
