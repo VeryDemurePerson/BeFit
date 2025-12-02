@@ -1,6 +1,6 @@
-// App.js
+// App.js - FIXED VERSION
 import 'react-native-gesture-handler';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   ActivityIndicator,
@@ -201,15 +201,19 @@ function MainTabs() {
   const themeColors = theme === 'light' ? lightTheme : darkTheme;
   const [chatVisible, setChatVisible] = useState(false);
 
+  // CRITICAL FIX: Memoize the tabBar render function
+  // This prevents re-creating the function on every render
+  const renderTabBar = useCallback((props) => (
+    <BeFitTabBar {...props} themeColors={themeColors} />
+  ), [themeColors]);
+
   return (
     <>
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
         }}
-        tabBar={(props) => (
-          <BeFitTabBar {...props} themeColors={themeColors} />
-        )}
+        tabBar={renderTabBar}
       >
         {/* Visible tabs */}
         <Tab.Screen name="Home" component={HomeScreen} />

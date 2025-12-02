@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,217 @@ import { useTheme } from './ThemeContext';
 import { lightTheme, darkTheme } from './themes';
 import { Ionicons } from '@expo/vector-icons';
 
+// Move FoodInput outside to prevent recreation
+const FoodInput = React.memo(({ 
+  food, 
+  index, 
+  colors, 
+  theme,
+  foodsLength,
+  onNameChange, 
+  onCaloriesChange, 
+  onMacroChange, 
+  onRemove,
+  onSelectSuggestion,
+  suggestions,
+  loadingSuggestions 
+}) => {
+  console.log('🟢 FoodInput rendered for food:', food.id);
+
+  return (
+    <View style={[styles.foodCard, { 
+      backgroundColor: colors.cardBackground, 
+      borderColor: colors.border,
+      shadowColor: theme === 'light' ? '#000' : '#fff',
+    }]}>
+      <View style={styles.foodCardHeader}>
+        <View style={styles.foodCardTitleRow}>
+          <Ionicons name="restaurant-outline" size={20} color={colors.accent} />
+          <Text style={[styles.foodCardTitle, { color: colors.text }]}>
+            Food Item {foodsLength > 1 ? `#${index + 1}` : ''}
+          </Text>
+        </View>
+        {foodsLength > 1 && (
+          <TouchableOpacity 
+            onPress={() => onRemove(food.id)}
+            style={[styles.removeButton, { backgroundColor: colors.danger + '15' }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={[styles.inputLabel, { color: colors.text }]}>
+          Food Name <Text style={{ color: colors.danger }}>*</Text>
+        </Text>
+        <TextInput
+          style={[styles.input, { 
+            backgroundColor: colors.inputBackground, 
+            borderColor: colors.border, 
+            color: colors.text 
+          }]}
+          value={food.name}
+          onChangeText={(text) => onNameChange(text, food.id)}
+          placeholder="e.g., Grilled chicken breast"
+          placeholderTextColor={colors.placeholderText}
+        />
+      </View>
+
+      {loadingSuggestions && (
+        <View style={[styles.statusContainer, { backgroundColor: colors.accent + '10' }]}>
+          <ActivityIndicator size="small" color={colors.accent} />
+          <Text style={[styles.statusText, { color: colors.accent }]}>Searching foods...</Text>
+        </View>
+      )}
+
+      {!loadingSuggestions && suggestions.length === 0 && food.name.length >= 2 && (
+        <View style={[styles.statusContainer, { backgroundColor: colors.warning + '10' }]}>
+          <Ionicons name="information-circle-outline" size={16} color={colors.subtext} />
+          <Text style={[styles.statusText, { color: colors.subtext }]}>
+            No results. Try different keywords or enter manually.
+          </Text>
+        </View>
+      )}
+
+      {suggestions.length > 0 && (
+        <View style={styles.suggestionsWrapper}>
+          <Text style={[styles.suggestionsHeader, { color: colors.accent }]}>
+            <Ionicons name="search-outline" size={14} color={colors.accent} /> Suggested Foods
+          </Text>
+          <ScrollView 
+            style={[styles.suggestionsBox, { 
+              backgroundColor: colors.background,
+              borderColor: colors.border 
+            }]} 
+            nestedScrollEnabled 
+            showsVerticalScrollIndicator={true}
+          >
+            {suggestions.map((item, i) => (
+              <TouchableOpacity
+                key={`suggestion-${food.id}-${i}`}
+                style={[
+                  styles.suggestionItem,
+                  { 
+                    backgroundColor: colors.cardBackground,
+                    borderBottomColor: colors.border 
+                  },
+                  i === suggestions.length - 1 && styles.suggestionItemLast
+                ]}
+                onPress={() => onSelectSuggestion(item, food.id)}
+                activeOpacity={0.6}
+              >
+                <View style={styles.suggestionContent}>
+                  <Text style={[styles.suggestionName, { color: colors.text }]} numberOfLines={2}>
+                    {item.name}
+                  </Text>
+                  <View style={styles.suggestionMacrosContainer}>
+                    <View style={[styles.macroChip, { backgroundColor: colors.accent + '15' }]}>
+                      <Text style={[styles.macroChipLabel, { color: colors.accent }]}>Cal</Text>
+                      <Text style={[styles.macroChipValue, { color: colors.text }]}>
+                        {item.calories}
+                      </Text>
+                    </View>
+                    <View style={[styles.macroChip, { backgroundColor: colors.inputBackground }]}>
+                      <Text style={[styles.macroChipLabel, { color: colors.subtext }]}>P</Text>
+                      <Text style={[styles.macroChipValue, { color: colors.text }]}>
+                        {item.protein}g
+                      </Text>
+                    </View>
+                    <View style={[styles.macroChip, { backgroundColor: colors.inputBackground }]}>
+                      <Text style={[styles.macroChipLabel, { color: colors.subtext }]}>C</Text>
+                      <Text style={[styles.macroChipValue, { color: colors.text }]}>
+                        {item.carbs}g
+                      </Text>
+                    </View>
+                    <View style={[styles.macroChip, { backgroundColor: colors.inputBackground }]}>
+                      <Text style={[styles.macroChipLabel, { color: colors.subtext }]}>F</Text>
+                      <Text style={[styles.macroChipValue, { color: colors.text }]}>
+                        {item.fat}g
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.subtext} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      <View style={styles.inputGroup}>
+        <Text style={[styles.inputLabel, { color: colors.text }]}>
+          Calories <Text style={{ color: colors.danger }}>*</Text>
+        </Text>
+        <TextInput
+          style={[styles.input, { 
+            backgroundColor: colors.inputBackground, 
+            borderColor: colors.border, 
+            color: colors.text 
+          }]}
+          value={food.calories}
+          onChangeText={(text) => onCaloriesChange(text, food.id)}
+          placeholder="e.g., 200"
+          placeholderTextColor={colors.placeholderText}
+          keyboardType="numeric"
+        />
+      </View>
+
+      <Text style={[styles.sectionLabel, { color: colors.text }]}>
+        Macronutrients (Optional)
+      </Text>
+      <View style={styles.macrosContainer}>
+        <View style={styles.macroInput}>
+          <Text style={[styles.macroLabel, { color: colors.subtext }]}>Protein (g)</Text>
+          <TextInput
+            style={[styles.smallInput, { 
+              backgroundColor: colors.inputBackground, 
+              borderColor: colors.border, 
+              color: colors.text 
+            }]}
+            value={food.protein.toString()}
+            onChangeText={(text) => onMacroChange('protein', text, food.id)}
+            placeholder="0"
+            placeholderTextColor={colors.placeholderText}
+            keyboardType="numeric"
+          />
+        </View>
+        <View style={styles.macroInput}>
+          <Text style={[styles.macroLabel, { color: colors.subtext }]}>Carbs (g)</Text>
+          <TextInput
+            style={[styles.smallInput, { 
+              backgroundColor: colors.inputBackground, 
+              borderColor: colors.border, 
+              color: colors.text 
+            }]}
+            value={food.carbs.toString()}
+            onChangeText={(text) => onMacroChange('carbs', text, food.id)}
+            placeholder="0"
+            placeholderTextColor={colors.placeholderText}
+            keyboardType="numeric"
+          />
+        </View>
+        <View style={styles.macroInput}>
+          <Text style={[styles.macroLabel, { color: colors.subtext }]}>Fat (g)</Text>
+          <TextInput
+            style={[styles.smallInput, { 
+              backgroundColor: colors.inputBackground, 
+              borderColor: colors.border, 
+              color: colors.text 
+            }]}
+            value={food.fat.toString()}
+            onChangeText={(text) => onMacroChange('fat', text, food.id)}
+            placeholder="0"
+            placeholderTextColor={colors.placeholderText}
+            keyboardType="numeric"
+          />
+        </View>
+      </View>
+    </View>
+  );
+});
+
 const AddMealScreen = ({ navigation, route }) => {
   const { mealType = 'Breakfast', meal = null, isEditing = false } = route.params || {};
 
@@ -37,16 +248,21 @@ const AddMealScreen = ({ navigation, route }) => {
   
   const themeContext = useTheme();
   const theme = themeContext?.theme || 'light';
-  const colors = (theme === 'light' ? lightTheme : darkTheme) || {
-    accent: '#6366F1',
-    text: '#333',
-    background: '#f5f5f5',
-    cardBackground: '#ffffff',
-    inputBackground: '#f8f8f8',
-    border: '#e0e0e0',
-    placeholderText: '#999',
-    subtext: '#666'
-  };
+  
+  const colors = useMemo(() => {
+    return (theme === 'light' ? lightTheme : darkTheme) || {
+      accent: '#6366F1',
+      text: '#333',
+      background: '#f5f5f5',
+      cardBackground: '#ffffff',
+      inputBackground: '#f8f8f8',
+      border: '#e0e0e0',
+      placeholderText: '#999',
+      subtext: '#666',
+      danger: '#EF4444',
+      warning: '#FF9500'
+    };
+  }, [theme]);
 
   useEffect(() => {
     if (isEditing && meal) {
@@ -61,20 +277,20 @@ const AddMealScreen = ({ navigation, route }) => {
     }
   }, [isEditing, meal]);
 
-  const addFoodField = () => setFoods([...foods, { 
-    id: Date.now(), 
-    name: '', 
-    calories: '', 
-    protein: 0, 
-    carbs: 0, 
-    fat: 0 
-  }]);
+  const addFoodField = useCallback(() => {
+    setFoods(prev => [...prev, { 
+      id: Date.now(), 
+      name: '', 
+      calories: '', 
+      protein: 0, 
+      carbs: 0, 
+      fat: 0 
+    }]);
+  }, []);
   
-  const removeFoodField = (id) => {
-    if (foods.length > 1) {
-      setFoods(foods.filter((food) => food.id !== id));
-    }
-  };
+  const removeFoodField = useCallback((id) => {
+    setFoods(prev => prev.length > 1 ? prev.filter((food) => food.id !== id) : prev);
+  }, []);
 
   const performSearch = useCallback(async (text, id) => {
     const trimmedText = text?.trim();
@@ -117,6 +333,39 @@ const AddMealScreen = ({ navigation, route }) => {
       setSearchLoading(prev => ({ ...prev, [id]: false }));
     }
   }, [performSearch]);
+
+  const handleCaloriesChange = useCallback((text, id) => {
+    setFoods(prevFoods => 
+      prevFoods.map((f) => 
+        f.id === id ? { ...f, calories: text } : f
+      )
+    );
+  }, []);
+
+  const handleMacroChange = useCallback((field, text, id) => {
+    setFoods(prevFoods => 
+      prevFoods.map((f) => 
+        f.id === id ? { ...f, [field]: parseFloat(text) || 0 } : f
+      )
+    );
+  }, []);
+
+  const handleSelectSuggestion = useCallback((item, foodId) => {
+    setFoods(prevFoods => 
+      prevFoods.map((f) => 
+        f.id === foodId ? {
+          ...f,
+          name: item.name,
+          calories: item.calories.toString(),
+          protein: item.protein,
+          carbs: item.carbs,
+          fat: item.fat
+        } : f
+      )
+    );
+    
+    setSearchSuggestions(prev => ({ ...prev, [foodId]: [] }));
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -228,255 +477,25 @@ const AddMealScreen = ({ navigation, route }) => {
     }
   };
 
-  const FoodInput = ({ food, index }) => {
-    const [localName, setLocalName] = useState(food.name);
-    const suggestions = searchSuggestions[food.id] || [];
-    const loadingSuggestions = searchLoading[food.id] || false;
-
-    useEffect(() => {
-      if (food.name !== localName) {
-        setLocalName(food.name);
-      }
-    }, [food.name]);
-
-    const handleNameChange = (text) => {
-      setLocalName(text);
-      handleFoodNameChange(text, food.id);
-    };
-
-    const handleSelectSuggestion = (item) => {
-      setLocalName(item.name);
-      
-      setFoods(prevFoods => 
-        prevFoods.map((f) => 
-          f.id === food.id ? {
-            ...f,
-            name: item.name,
-            calories: item.calories.toString(),
-            protein: item.protein,
-            carbs: item.carbs,
-            fat: item.fat
-          } : f
-        )
-      );
-      
-      setSearchSuggestions(prev => ({ ...prev, [food.id]: [] }));
-    };
-
-    const handleCaloriesChange = (text) => {
-      setFoods(prevFoods => 
-        prevFoods.map((f) => 
-          f.id === food.id ? { ...f, calories: text } : f
-        )
-      );
-    };
-
-    const handleMacroChange = (field, text) => {
-      setFoods(prevFoods => 
-        prevFoods.map((f) => 
-          f.id === food.id ? { ...f, [field]: parseFloat(text) || 0 } : f
-        )
-      );
-    };
-
-    return (
-      <View style={[styles.foodCard, { 
-        backgroundColor: colors.cardBackground, 
-        borderColor: colors.border,
-        shadowColor: theme === 'light' ? '#000' : '#fff',
-      }]}>
-        <View style={styles.foodCardHeader}>
-          <View style={styles.foodCardTitleRow}>
-            <Ionicons name="restaurant-outline" size={20} color={colors.accent} />
-            <Text style={[styles.foodCardTitle, { color: colors.text }]}>
-              Food Item {foods.length > 1 ? `#${index + 1}` : ''}
-            </Text>
-          </View>
-          {foods.length > 1 && (
-            <TouchableOpacity 
-              onPress={() => removeFoodField(food.id)}
-              style={[styles.removeButton, { backgroundColor: colors.danger + '15' }]}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="trash-outline" size={18} color={colors.danger} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.text }]}>
-            Food Name <Text style={{ color: colors.danger }}>*</Text>
-          </Text>
-          <TextInput
-            style={[styles.input, { 
-              backgroundColor: colors.inputBackground, 
-              borderColor: colors.border, 
-              color: colors.text 
-            }]}
-            value={localName}
-            onChangeText={handleNameChange}
-            placeholder="e.g., Grilled chicken breast"
-            placeholderTextColor={colors.placeholderText}
-          />
-        </View>
-
-        {loadingSuggestions && (
-          <View style={[styles.statusContainer, { backgroundColor: colors.accent + '10' }]}>
-            <ActivityIndicator size="small" color={colors.accent} />
-            <Text style={[styles.statusText, { color: colors.accent }]}>Searching foods...</Text>
-          </View>
-        )}
-
-        {!loadingSuggestions && suggestions.length === 0 && localName.length >= 2 && (
-          <View style={[styles.statusContainer, { backgroundColor: colors.warning + '10' }]}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.subtext} />
-            <Text style={[styles.statusText, { color: colors.subtext }]}>
-              No results. Try different keywords or enter manually.
-            </Text>
-          </View>
-        )}
-
-        {suggestions.length > 0 && (
-          <View style={styles.suggestionsWrapper}>
-            <Text style={[styles.suggestionsHeader, { color: colors.accent }]}>
-              <Ionicons name="search-outline" size={14} color={colors.accent} /> Suggested Foods
-            </Text>
-            <ScrollView 
-              style={[styles.suggestionsBox, { 
-                backgroundColor: colors.background,
-                borderColor: colors.border 
-              }]} 
-              nestedScrollEnabled 
-              showsVerticalScrollIndicator={true}
-            >
-              {suggestions.map((item, i) => (
-                <TouchableOpacity
-                  key={`suggestion-${food.id}-${i}`}
-                  style={[
-                    styles.suggestionItem,
-                    { 
-                      backgroundColor: colors.cardBackground,
-                      borderBottomColor: colors.border 
-                    },
-                    i === suggestions.length - 1 && styles.suggestionItemLast
-                  ]}
-                  onPress={() => handleSelectSuggestion(item)}
-                  activeOpacity={0.6}
-                >
-                  <View style={styles.suggestionContent}>
-                    <Text style={[styles.suggestionName, { color: colors.text }]} numberOfLines={2}>
-                      {item.name}
-                    </Text>
-                    <View style={styles.suggestionMacrosContainer}>
-                      <View style={[styles.macroChip, { backgroundColor: colors.accent + '15' }]}>
-                        <Text style={[styles.macroChipLabel, { color: colors.accent }]}>Cal</Text>
-                        <Text style={[styles.macroChipValue, { color: colors.text }]}>
-                          {item.calories}
-                        </Text>
-                      </View>
-                      <View style={[styles.macroChip, { backgroundColor: colors.inputBackground }]}>
-                        <Text style={[styles.macroChipLabel, { color: colors.subtext }]}>P</Text>
-                        <Text style={[styles.macroChipValue, { color: colors.text }]}>
-                          {item.protein}g
-                        </Text>
-                      </View>
-                      <View style={[styles.macroChip, { backgroundColor: colors.inputBackground }]}>
-                        <Text style={[styles.macroChipLabel, { color: colors.subtext }]}>C</Text>
-                        <Text style={[styles.macroChipValue, { color: colors.text }]}>
-                          {item.carbs}g
-                        </Text>
-                      </View>
-                      <View style={[styles.macroChip, { backgroundColor: colors.inputBackground }]}>
-                        <Text style={[styles.macroChipLabel, { color: colors.subtext }]}>F</Text>
-                        <Text style={[styles.macroChipValue, { color: colors.text }]}>
-                          {item.fat}g
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.subtext} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.text }]}>
-            Calories <Text style={{ color: colors.danger }}>*</Text>
-          </Text>
-          <TextInput
-            style={[styles.input, { 
-              backgroundColor: colors.inputBackground, 
-              borderColor: colors.border, 
-              color: colors.text 
-            }]}
-            value={food.calories}
-            onChangeText={handleCaloriesChange}
-            placeholder="e.g., 200"
-            placeholderTextColor={colors.placeholderText}
-            keyboardType="numeric"
-          />
-        </View>
-
-        <Text style={[styles.sectionLabel, { color: colors.text }]}>
-          Macronutrients (Optional)
-        </Text>
-        <View style={styles.macrosContainer}>
-          <View style={styles.macroInput}>
-            <Text style={[styles.macroLabel, { color: colors.subtext }]}>Protein (g)</Text>
-            <TextInput
-              style={[styles.smallInput, { 
-                backgroundColor: colors.inputBackground, 
-                borderColor: colors.border, 
-                color: colors.text 
-              }]}
-              value={food.protein.toString()}
-              onChangeText={(text) => handleMacroChange('protein', text)}
-              placeholder="0"
-              placeholderTextColor={colors.placeholderText}
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={styles.macroInput}>
-            <Text style={[styles.macroLabel, { color: colors.subtext }]}>Carbs (g)</Text>
-            <TextInput
-              style={[styles.smallInput, { 
-                backgroundColor: colors.inputBackground, 
-                borderColor: colors.border, 
-                color: colors.text 
-              }]}
-              value={food.carbs.toString()}
-              onChangeText={(text) => handleMacroChange('carbs', text)}
-              placeholder="0"
-              placeholderTextColor={colors.placeholderText}
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={styles.macroInput}>
-            <Text style={[styles.macroLabel, { color: colors.subtext }]}>Fat (g)</Text>
-            <TextInput
-              style={[styles.smallInput, { 
-                backgroundColor: colors.inputBackground, 
-                borderColor: colors.border, 
-                color: colors.text 
-              }]}
-              value={food.fat.toString()}
-              onChangeText={(text) => handleMacroChange('fat', text)}
-              placeholder="0"
-              placeholderTextColor={colors.placeholderText}
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  const totalCalories = foods.reduce((sum, food) => sum + (parseInt(food.calories) || 0), 0);
-  const totalProtein = foods.reduce((sum, food) => sum + (food.protein || 0), 0);
-  const totalCarbs = foods.reduce((sum, food) => sum + (food.carbs || 0), 0);
-  const totalFat = foods.reduce((sum, food) => sum + (food.fat || 0), 0);
+  const totalCalories = useMemo(() => 
+    foods.reduce((sum, food) => sum + (parseInt(food.calories) || 0), 0), 
+    [foods]
+  );
+  
+  const totalProtein = useMemo(() => 
+    foods.reduce((sum, food) => sum + (food.protein || 0), 0), 
+    [foods]
+  );
+  
+  const totalCarbs = useMemo(() => 
+    foods.reduce((sum, food) => sum + (food.carbs || 0), 0), 
+    [foods]
+  );
+  
+  const totalFat = useMemo(() => 
+    foods.reduce((sum, food) => sum + (food.fat || 0), 0), 
+    [foods]
+  );
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -553,7 +572,21 @@ const AddMealScreen = ({ navigation, route }) => {
           </View>
 
           {foods.map((food, index) => (
-            <FoodInput key={food.id} food={food} index={index} />
+            <FoodInput 
+              key={food.id} 
+              food={food} 
+              index={index}
+              colors={colors}
+              theme={theme}
+              foodsLength={foods.length}
+              onNameChange={handleFoodNameChange}
+              onCaloriesChange={handleCaloriesChange}
+              onMacroChange={handleMacroChange}
+              onRemove={removeFoodField}
+              onSelectSuggestion={handleSelectSuggestion}
+              suggestions={searchSuggestions[food.id] || []}
+              loadingSuggestions={searchLoading[food.id] || false}
+            />
           ))}
 
           <TouchableOpacity 
@@ -631,19 +664,10 @@ const AddMealScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  keyboardAvoid: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
+  safeArea: { flex: 1 },
+  keyboardAvoid: { flex: 1 },
+  container: { flex: 1 },
+  scrollContent: { padding: 16, paddingBottom: 100 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -674,9 +698,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  mealTypeContainer: {
-    marginBottom: 20,
-  },
+  mealTypeContainer: { marginBottom: 20 },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
@@ -737,9 +759,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  inputGroup: {
-    marginBottom: 16,
-  },
+  inputGroup: { marginBottom: 16 },
   inputLabel: {
     fontSize: 15,
     fontWeight: '600',
@@ -765,9 +785,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
-  suggestionsWrapper: {
-    marginBottom: 16,
-  },
+  suggestionsWrapper: { marginBottom: 16 },
   suggestionsHeader: {
     fontSize: 14,
     fontWeight: '600',
@@ -786,9 +804,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 68,
   },
-  suggestionItemLast: {
-    borderBottomWidth: 0,
-  },
+  suggestionItemLast: { borderBottomWidth: 0 },
   suggestionContent: {
     flex: 1,
     marginRight: 12,
@@ -829,9 +845,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
   },
-  macroInput: {
-    flex: 1,
-  },
+  macroInput: { flex: 1 },
   macroLabel: {
     fontSize: 13,
     fontWeight: '600',
@@ -903,9 +917,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingTop: 12,
   },
-  macroSummaryItem: {
-    alignItems: 'center',
-  },
+  macroSummaryItem: { alignItems: 'center' },
   macroSummaryLabel: {
     fontSize: 13,
     fontWeight: '500',
