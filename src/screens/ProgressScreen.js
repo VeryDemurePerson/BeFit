@@ -1,5 +1,6 @@
 // src/screens/ProgressScreen.js
 import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,10 +14,15 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "../services/firebase";
 import { useTheme } from "./ThemeContext";
 import { lightTheme, darkTheme } from "./themes";
+} from 'react-native';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../services/firebase';
+import { useTheme } from './ThemeContext';
+import { lightTheme, darkTheme } from './themes';
 
 const ProgressScreen = () => {
   const { theme } = useTheme();
-  const colors = theme === "light" ? lightTheme : darkTheme;
+  const colors = theme === 'light' ? lightTheme : darkTheme;
 
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +70,8 @@ const ProgressScreen = () => {
       const q = query(
         collection(db, "workouts"),
         where("userId", "==", user.uid)
+        collection(db, 'workouts'),
+        where('userId', '==', user.uid)
       );
       const snap = await getDocs(q);
 
@@ -76,6 +84,7 @@ const ProgressScreen = () => {
       workoutList.sort(
         (a, b) => parseDate(b.createdAt) - parseDate(a.createdAt)
       );
+      workoutList.sort((a, b) => parseDate(b.createdAt) - parseDate(a.createdAt));
 
       setWorkouts(workoutList);
       calculateStats(workoutList);
@@ -125,6 +134,7 @@ const ProgressScreen = () => {
             workoutsByType[a] > workoutsByType[b] ? a : b
           )
         : "none";
+        : 'none';
 
     // Weekly progress (last 8 weeks)
     const weeklyProgress = [];
@@ -142,12 +152,16 @@ const ProgressScreen = () => {
       weeklyProgress.push({
         week: `W${8 - i}`,
         workouts: weekWorkouts.length,
-        duration: weekWorkouts.reduce((sum, w) => sum + (w.duration || 0), 0),
+        duration: weekWorkouts.reduce(
+          (sum, w) => sum + (w.duration || 0),
+          0
+        ),
       });
     }
 
     // Daily average this week (Mon–Sun)
     const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const dailyAverage = dayLabels.map((dayLabel, index) => {
       const dayWorkouts = workoutList.filter((w) => {
         const d = parseDate(w.createdAt);
@@ -182,6 +196,7 @@ const ProgressScreen = () => {
     color = colors.accent,
     trend,
   }) => (
+  const StatCard = ({ title, value, subtitle, color = colors.accent, trend }) => (
     <View
       style={[
         styles.statCard,
@@ -200,6 +215,7 @@ const ProgressScreen = () => {
         </Text>
       )}
       {typeof trend === "number" && (
+      {typeof trend === 'number' && (
         <Text
           style={[
             styles.trend,
@@ -210,6 +226,11 @@ const ProgressScreen = () => {
           ]}
         >
           {trend > 0 ? "↗️" : trend < 0 ? "↘️" : "→"} {Math.abs(trend)}
+                trend > 0 ? '#4CAF50' : trend < 0 ? '#F44336' : colors.subtext,
+            },
+          ]}
+        >
+          {trend > 0 ? '↗️' : trend < 0 ? '↘️' : '→'} {Math.abs(trend)}
         </Text>
       )}
     </View>
@@ -255,10 +276,15 @@ const ProgressScreen = () => {
                     ]}
                   />
                 </View>
-                <Text style={[styles.barLabel, { color: colors.subtext }]}>
+                <Text
+                  style={[styles.barLabel, { color: colors.subtext }]}
+                >
                   {item.day || item.week}
                 </Text>
                 <Text style={[styles.barValue, { color: colors.text }]}>
+                <Text
+                  style={[styles.barValue, { color: colors.text }]}
+                >
                   {value}
                 </Text>
               </View>
@@ -273,6 +299,10 @@ const ProgressScreen = () => {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
+        style={[
+          styles.container,
+          { backgroundColor: colors.background },
+        ]}
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.accent} />
@@ -362,6 +392,43 @@ const ProgressScreen = () => {
             </Text>
           </View>
         )}
+        {stats.mostFrequentType &&
+          stats.mostFrequentType !== 'none' && (
+            <View
+              style={[
+                styles.favoriteContainer,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.favoriteTitle,
+                  { color: colors.subtext },
+                ]}
+              >
+                Your Favorite Workout
+              </Text>
+              <Text
+                style={[
+                  styles.favoriteType,
+                  { color: colors.accent },
+                ]}
+              >
+                {stats.mostFrequentType
+                  .charAt(0)
+                  .toUpperCase() +
+                  stats.mostFrequentType.slice(1)}
+              </Text>
+              <Text
+                style={[
+                  styles.favoriteCount,
+                  { color: colors.subtext },
+                ]}
+              >
+                {stats.workoutsByType[stats.mostFrequentType]} sessions
+              </Text>
+            </View>
+          )}
 
         {/* Charts or empty state */}
         {stats.totalWorkouts > 0 ? (
@@ -387,6 +454,20 @@ const ProgressScreen = () => {
               No Progress Data Yet
             </Text>
             <Text style={[styles.noDataText, { color: colors.subtext }]}>
+            <Text
+              style={[
+                styles.noDataTitle,
+                { color: colors.text },
+              ]}
+            >
+              No Progress Data Yet
+            </Text>
+            <Text
+              style={[
+                styles.noDataText,
+                { color: colors.subtext },
+              ]}
+            >
               Complete a few workouts to see your progress charts and
               statistics!
             </Text>
@@ -405,31 +486,46 @@ const ProgressScreen = () => {
           </Text>
           {stats.totalWorkouts >= 1 && (
             <Text style={[styles.achievement, { color: "#4CAF50" }]}>
+          <Text
+            style={[
+              styles.achievementsTitle,
+              { color: colors.text },
+            ]}
+          >
+            🏆 Achievements
+          </Text>
+          {stats.totalWorkouts >= 1 && (
+            <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ First Workout Completed
             </Text>
           )}
           {stats.totalWorkouts >= 5 && (
             <Text style={[styles.achievement, { color: "#4CAF50" }]}>
+            <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ 5 Workouts Milestone
             </Text>
           )}
           {stats.totalWorkouts >= 10 && (
             <Text style={[styles.achievement, { color: "#4CAF50" }]}>
+            <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ 10 Workouts Milestone
             </Text>
           )}
           {stats.thisWeekWorkouts >= 3 && (
             <Text style={[styles.achievement, { color: "#4CAF50" }]}>
+            <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ 3 Workouts This Week
             </Text>
           )}
           {stats.totalDuration >= 60 && (
             <Text style={[styles.achievement, { color: "#4CAF50" }]}>
+            <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ 1 Hour Total Exercise
             </Text>
           )}
           {stats.totalDuration >= 300 && (
             <Text style={[styles.achievement, { color: "#4CAF50" }]}>
+            <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ 5 Hours Total Exercise
             </Text>
           )}
@@ -456,6 +552,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,
@@ -470,6 +567,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     width: "48%",
+    width: '48%',
     marginBottom: 15,
     borderWidth: 1,
     borderLeftWidth: 4,
@@ -481,6 +579,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 22,
     fontWeight: "700",
+    fontWeight: '700',
   },
   statSubtitle: {
     fontSize: 12,
@@ -520,9 +619,9 @@ const styles = StyleSheet.create({
   },
   chartTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
     marginBottom: 14,
-    textAlign: "center",
+    textAlign: 'center',
   },
   barsContainer: {
     flexDirection: "row",
@@ -538,7 +637,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 80,
     borderRadius: 4,
-    justifyContent: "flex-end",
+    justifyContent: 'flex-end',
     marginBottom: 6,
   },
   bar: {
@@ -552,10 +651,10 @@ const styles = StyleSheet.create({
   },
   barValue: {
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   noDataContainer: {
-    alignItems: "center",
+    alignItems: 'center',
     padding: 32,
     margin: 20,
     borderRadius: 10,
@@ -567,12 +666,12 @@ const styles = StyleSheet.create({
   },
   noDataTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: '700',
     marginBottom: 6,
   },
   noDataText: {
     fontSize: 14,
-    textAlign: "center",
+    textAlign: 'center',
     lineHeight: 20,
   },
   achievementsContainer: {
@@ -584,13 +683,13 @@ const styles = StyleSheet.create({
   },
   achievementsTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: '700',
     marginBottom: 12,
   },
   achievement: {
     fontSize: 14,
     marginBottom: 6,
-    fontWeight: "500",
+    fontWeight: '500',
   },
 });
 
