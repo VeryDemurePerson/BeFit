@@ -1,4 +1,5 @@
 // src/screens/ProgressScreen.js
+import React, { useState, useEffect } from "react";
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,6 +9,11 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
+} from "react-native";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { auth, db } from "../services/firebase";
+import { useTheme } from "./ThemeContext";
+import { lightTheme, darkTheme } from "./themes";
 } from 'react-native';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
@@ -25,7 +31,7 @@ const ProgressScreen = () => {
     totalWorkouts: 0,
     totalDuration: 0,
     averageDuration: 0,
-    mostFrequentType: '',
+    mostFrequentType: "",
     thisWeekWorkouts: 0,
     lastWeekWorkouts: 0,
     workoutsByType: {},
@@ -62,6 +68,8 @@ const ProgressScreen = () => {
       }
 
       const q = query(
+        collection(db, "workouts"),
+        where("userId", "==", user.uid)
         collection(db, 'workouts'),
         where('userId', '==', user.uid)
       );
@@ -73,12 +81,15 @@ const ProgressScreen = () => {
       }));
 
       // Sort newest first
+      workoutList.sort(
+        (a, b) => parseDate(b.createdAt) - parseDate(a.createdAt)
+      );
       workoutList.sort((a, b) => parseDate(b.createdAt) - parseDate(a.createdAt));
 
       setWorkouts(workoutList);
       calculateStats(workoutList);
     } catch (error) {
-      console.error('Error fetching progress data:', error);
+      console.error("Error fetching progress data:", error);
     } finally {
       setLoading(false);
     }
@@ -112,7 +123,7 @@ const ProgressScreen = () => {
 
     // Workouts by type
     const workoutsByType = workoutList.reduce((acc, workout) => {
-      const type = workout.type || 'general';
+      const type = workout.type || "general";
       acc[type] = (acc[type] || 0) + 1;
       return acc;
     }, {});
@@ -122,6 +133,7 @@ const ProgressScreen = () => {
         ? Object.keys(workoutsByType).reduce((a, b) =>
             workoutsByType[a] > workoutsByType[b] ? a : b
           )
+        : "none";
         : 'none';
 
     // Weekly progress (last 8 weeks)
@@ -148,6 +160,7 @@ const ProgressScreen = () => {
     }
 
     // Daily average this week (Mon–Sun)
+    const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const dailyAverage = dayLabels.map((dayLabel, index) => {
       const dayWorkouts = workoutList.filter((w) => {
@@ -176,6 +189,13 @@ const ProgressScreen = () => {
     });
   };
 
+  const StatCard = ({
+    title,
+    value,
+    subtitle,
+    color = colors.accent,
+    trend,
+  }) => (
   const StatCard = ({ title, value, subtitle, color = colors.accent, trend }) => (
     <View
       style={[
@@ -194,12 +214,18 @@ const ProgressScreen = () => {
           {subtitle}
         </Text>
       )}
+      {typeof trend === "number" && (
       {typeof trend === 'number' && (
         <Text
           style={[
             styles.trend,
             {
               color:
+                trend > 0 ? "#4CAF50" : trend < 0 ? "#F44336" : colors.subtext,
+            },
+          ]}
+        >
+          {trend > 0 ? "↗️" : trend < 0 ? "↘️" : "→"} {Math.abs(trend)}
                 trend > 0 ? '#4CAF50' : trend < 0 ? '#F44336' : colors.subtext,
             },
           ]}
@@ -255,6 +281,7 @@ const ProgressScreen = () => {
                 >
                   {item.day || item.week}
                 </Text>
+                <Text style={[styles.barValue, { color: colors.text }]}>
                 <Text
                   style={[styles.barValue, { color: colors.text }]}
                 >
@@ -271,6 +298,7 @@ const ProgressScreen = () => {
   if (loading) {
     return (
       <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
         style={[
           styles.container,
           { backgroundColor: colors.background },
@@ -345,6 +373,25 @@ const ProgressScreen = () => {
         </View>
 
         {/* Favorite workout type */}
+        {stats.mostFrequentType && stats.mostFrequentType !== "none" && (
+          <View
+            style={[
+              styles.favoriteContainer,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.favoriteTitle, { color: colors.subtext }]}>
+              Your Favorite Workout
+            </Text>
+            <Text style={[styles.favoriteType, { color: colors.accent }]}>
+              {stats.mostFrequentType.charAt(0).toUpperCase() +
+                stats.mostFrequentType.slice(1)}
+            </Text>
+            <Text style={[styles.favoriteCount, { color: colors.subtext }]}>
+              {stats.workoutsByType[stats.mostFrequentType]} sessions
+            </Text>
+          </View>
+        )}
         {stats.mostFrequentType &&
           stats.mostFrequentType !== 'none' && (
             <View
@@ -403,6 +450,10 @@ const ProgressScreen = () => {
             ]}
           >
             <Text style={styles.noDataIcon}>📊</Text>
+            <Text style={[styles.noDataTitle, { color: colors.text }]}>
+              No Progress Data Yet
+            </Text>
+            <Text style={[styles.noDataText, { color: colors.subtext }]}>
             <Text
               style={[
                 styles.noDataTitle,
@@ -430,6 +481,11 @@ const ProgressScreen = () => {
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
+          <Text style={[styles.achievementsTitle, { color: colors.text }]}>
+            🏆 Achievements
+          </Text>
+          {stats.totalWorkouts >= 1 && (
+            <Text style={[styles.achievement, { color: "#4CAF50" }]}>
           <Text
             style={[
               styles.achievementsTitle,
@@ -444,26 +500,31 @@ const ProgressScreen = () => {
             </Text>
           )}
           {stats.totalWorkouts >= 5 && (
+            <Text style={[styles.achievement, { color: "#4CAF50" }]}>
             <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ 5 Workouts Milestone
             </Text>
           )}
           {stats.totalWorkouts >= 10 && (
+            <Text style={[styles.achievement, { color: "#4CAF50" }]}>
             <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ 10 Workouts Milestone
             </Text>
           )}
           {stats.thisWeekWorkouts >= 3 && (
+            <Text style={[styles.achievement, { color: "#4CAF50" }]}>
             <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ 3 Workouts This Week
             </Text>
           )}
           {stats.totalDuration >= 60 && (
+            <Text style={[styles.achievement, { color: "#4CAF50" }]}>
             <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ 1 Hour Total Exercise
             </Text>
           )}
           {stats.totalDuration >= 300 && (
+            <Text style={[styles.achievement, { color: "#4CAF50" }]}>
             <Text style={[styles.achievement, { color: '#4CAF50' }]}>
               ✅ 5 Hours Total Exercise
             </Text>
@@ -480,8 +541,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     paddingHorizontal: 20,
@@ -490,20 +551,22 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
+    fontWeight: "bold",
     fontWeight: 'bold',
   },
   content: {
     flex: 1,
   },
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     padding: 20,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   statCard: {
     padding: 15,
     borderRadius: 10,
+    width: "48%",
     width: '48%',
     marginBottom: 15,
     borderWidth: 1,
@@ -515,6 +578,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 22,
+    fontWeight: "700",
     fontWeight: '700',
   },
   statSubtitle: {
@@ -523,7 +587,7 @@ const styles = StyleSheet.create({
   },
   trend: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 6,
   },
   favoriteContainer: {
@@ -532,7 +596,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     borderWidth: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   favoriteTitle: {
     fontSize: 15,
@@ -540,7 +604,7 @@ const styles = StyleSheet.create({
   },
   favoriteType: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
   favoriteCount: {
@@ -560,13 +624,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   barsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
     height: 100,
   },
   barContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
   },
   barBackground: {
@@ -577,7 +641,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   bar: {
-    width: '100%',
+    width: "100%",
     borderRadius: 4,
     minHeight: 2,
   },
