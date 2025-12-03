@@ -4,7 +4,7 @@ import * as Localization from "expo-localization";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Supported language codes in the app
-const SUPPORTED_LANGUAGES = ["en", "vi", "tl"];
+const SUPPORTED_LANGUAGES = ["en", "vi", "tl", "fr"];
 
 // Define translations
 const translations = {
@@ -404,6 +404,138 @@ const translations = {
     deletedSuccessfully: "Matagumpay na na-delete!",
     updateSuccessfully: "Matagumpay na na-update!",
   },
+  fr: {
+    // Auth screens
+    login: "Connexion",
+    signUp: "Créer un compte",
+    email: "E-mail",
+    password: "Mot de passe",
+    confirmPassword: "Confirmer le mot de passe",
+    fullName: "Nom complet",
+    age: "Âge",
+    weight: "Poids (kg)",
+    height: "Taille (cm)",
+    alreadyHaveAccount: "Vous avez déjà un compte ?",
+    dontHaveAccount: "Vous n’avez pas encore de compte ?",
+    // Navigation
+    home: "Accueil",
+    workout: "Entraînement",
+    goals: "Objectifs",
+    progress: "Progression",
+    nutrition: "Nutrition",
+    profile: "Profil",
+    // Home Screen
+    welcome: "Bienvenue",
+    todayStats: "Statistiques du jour",
+    waterIntake: "Apport en eau",
+    calories: "Calories",
+    workouts: "Séances",
+    quickActions: "Actions rapides",
+    logWorkout: "Enregistrer l’entraînement",
+    addMeal: "Ajouter un repas",
+    trackWater: "Suivre l’eau bue",
+    // Workout Screen
+    myWorkouts: "Mes entraînements",
+    addWorkout: "Ajouter un entraînement",
+    editWorkout: "Modifier l’entraînement",
+    deleteWorkout: "Supprimer l’entraînement",
+    exercise: "Exercice",
+    type: "Type",
+    duration: "Durée (min)",
+    calories_burned: "Calories brûlées",
+    notes: "Notes",
+    save: "Enregistrer",
+    cancel: "Annuler",
+    delete: "Supprimer",
+    // Workout Types
+    cardio: "Cardio",
+    strength: "Force",
+    flexibility: "Souplesse",
+    sports: "Sports",
+    other: "Autre",
+    // Exercise Types
+    running: "Course",
+    cycling: "Vélo",
+    swimming: "Natation",
+    walking: "Marche",
+    pushups: "Pompes",
+    squats: "Squats",
+    lunges: "Fentes",
+    plank: "Planche",
+    yoga: "Yoga",
+    stretching: "Étirements",
+    pilates: "Pilates",
+    basketball: "Basket-ball",
+    football: "Football",
+    tennis: "Tennis",
+    // Goals Screen
+    myGoals: "Mes objectifs",
+    addGoal: "Ajouter un objectif",
+    editGoal: "Modifier l’objectif",
+    goalTitle: "Titre de l’objectif",
+    targetValue: "Valeur cible",
+    currentValue: "Valeur actuelle",
+    deadline: "Date limite",
+    completed: "Terminé",
+    inProgress: "En cours",
+    // Progress Screen
+    myProgress: "Ma progression",
+    weeklyProgress: "Progression hebdomadaire",
+    monthlyProgress: "Progression mensuelle",
+    totalWorkouts: "Total des entraînements",
+    totalDuration: "Durée totale",
+    averageDuration: "Durée moyenne",
+    // Nutrition Screen
+    myNutrition: "Ma nutrition",
+    addMealBtn: "Ajouter un repas",
+    mealName: "Nom du repas",
+    mealType: "Type de repas",
+    breakfast: "Petit-déjeuner",
+    lunch: "Déjeuner",
+    dinner: "Dîner",
+    snack: "Collation",
+    protein: "Protéines (g)",
+    carbs: "Glucides (g)",
+    fats: "Lipides (g)",
+    // Profile Screen
+    myProfile: "Mon profil",
+    editProfile: "Modifier le profil",
+    accountInfo: "Informations du compte",
+    statistics: "Statistiques",
+    settings: "Paramètres",
+    language: "Langue",
+    theme: "Thème",
+    darkMode: "Mode sombre",
+    lightMode: "Mode clair",
+    logout: "Se déconnecter",
+    joinDate: "Date d’inscription",
+    currentStreak: "Série en cours",
+    days: "jours",
+    favoriteWorkout: "Entraînement préféré",
+    waterGlasses: "Verres d’eau",
+    changeAvatar: "Changer d’avatar",
+    // Chatbot
+    aiCoach: "Coach IA",
+    askQuestion: "Posez-moi vos questions sur le fitness…",
+    // Common
+    search: "Rechercher",
+    filter: "Filtrer",
+    sortBy: "Trier par",
+    date: "Date",
+    recent: "Le plus récent",
+    oldest: "Le plus ancien",
+    viewTutorial: "Voir le tutoriel",
+    watchVideo: "Regarder la vidéo",
+    // Messages
+    success: "Succès",
+    error: "Erreur",
+    loading: "Chargement...",
+    noData: "Aucune donnée disponible",
+    confirmDelete: "Voulez-vous vraiment supprimer ?",
+    savedSuccessfully: "Enregistré avec succès !",
+    deletedSuccessfully: "Supprimé avec succès !",
+    updateSuccessfully: "Mis à jour avec succès !",
+  },
 };
 
 // Set i18n configuration
@@ -412,13 +544,14 @@ i18n.fallbacks = true;
 i18n.defaultLocale = "en";
 
 /**
- * Map device locale (e.g. "en-US", "vi-VN", "fil-PH") to one of our supported codes.
+ * Map device locale (e.g. "en-US", "vi-VN", "fil-PH", "fr-CA") to one of our supported codes.
  */
 const mapDeviceLocaleToAppLocale = (deviceLocale) => {
   const lower = (deviceLocale || "").toLowerCase();
 
   if (lower.startsWith("vi")) return "vi";
   if (lower.startsWith("tl") || lower.startsWith("fil")) return "tl";
+  if (lower.startsWith("fr")) return "fr";
   return "en";
 };
 
