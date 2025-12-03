@@ -304,7 +304,7 @@ const AddWorkoutScreen = ({ navigation }) => {
     return (
       <TouchableOpacity
         style={[styles.videoCard, { 
-          backgroundColor: colors.cardBackground,
+          backgroundColor: colors.card,
           borderColor: colors.accent 
         }]}
         onPress={() => openYouTubeVideo(detectedExercise.videoId)}
@@ -361,7 +361,7 @@ const AddWorkoutScreen = ({ navigation }) => {
         {/* Strength exercises: Individual Set Tracking */}
         {isStrength && (
           <View style={[styles.strengthCard, { 
-            backgroundColor: colors.cardBackground,
+            backgroundColor: colors.card,
             borderColor: colors.border 
           }]}>
             <View style={styles.strengthCardHeader}>
@@ -395,7 +395,7 @@ const AddWorkoutScreen = ({ navigation }) => {
                   borderColor: colors.border 
                 }]}
               >
-                <View style={styles.setNumber}>
+                <View style={[styles.setNumber, { backgroundColor: colors.accent + '15' }]}>
                   <Text style={[styles.setNumberText, { color: colors.accent }]}>
                     {index + 1}
                   </Text>
@@ -409,7 +409,7 @@ const AddWorkoutScreen = ({ navigation }) => {
                     </Text>
                     <TextInput
                       style={[styles.setInput, { 
-                        backgroundColor: colors.cardBackground,
+                        backgroundColor: colors.card,
                         borderColor: colors.border,
                         color: colors.text 
                       }]}
@@ -429,7 +429,7 @@ const AddWorkoutScreen = ({ navigation }) => {
                       </Text>
                       <TextInput
                         style={[styles.setInput, { 
-                          backgroundColor: colors.cardBackground,
+                          backgroundColor: colors.card,
                           borderColor: colors.border,
                           color: colors.text 
                         }]}
@@ -552,7 +552,7 @@ const AddWorkoutScreen = ({ navigation }) => {
         {/* Cardio exercises: Distance, Pace, Calories */}
         {detectedExercise.type === 'cardio' && (
           <View style={[styles.cardioCard, { 
-            backgroundColor: colors.cardBackground,
+            backgroundColor: colors.card,
             borderColor: colors.border 
           }]}>
             <View style={styles.cardioCardHeader}>
@@ -702,7 +702,7 @@ const AddWorkoutScreen = ({ navigation }) => {
               key={suggestion}
               style={[
                 styles.suggestionChip,
-                { backgroundColor: colors.cardBackground, borderColor: colors.border },
+                { backgroundColor: colors.card, borderColor: colors.border },
               ]}
               onPress={() => updateField('exercise', suggestion)}
               activeOpacity={0.7}
@@ -883,8 +883,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 12,
-    borderRadius: 10,
-    borderWidth: 1.5,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   suggestionContent: { flex: 1 },
   suggestionText: {
@@ -898,9 +902,13 @@ const styles = StyleSheet.create({
   },
   dynamicFieldsContainer: {
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 2,
     marginBottom: 20,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    elevation: 2,
   },
   detectedHeader: {
     flexDirection: 'row',
@@ -930,10 +938,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   videoCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
-    borderWidth: 2,
+    borderWidth: 1,
+    // meal-like card shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   thumbnail: {
     width: '100%',
@@ -962,10 +975,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   strengthCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   strengthCardHeader: {
     flexDirection: 'row',
@@ -974,7 +991,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   strengthCardTitle: {
     fontSize: 16,
@@ -1044,10 +1061,14 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   cardioCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   cardioCardHeader: {
     flexDirection: 'row',
@@ -1056,7 +1077,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   cardioCardTitle: {
     fontSize: 16,
@@ -1137,21 +1158,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    padding: 14,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 2,
     borderStyle: 'dashed',
-    marginTop: 4,
+    marginTop: 8,
+    minHeight: 56,
   },
   addSetButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
   setSummary: {
     marginTop: 16,
-    padding: 14,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   summaryRow: {
     flexDirection: 'row',
