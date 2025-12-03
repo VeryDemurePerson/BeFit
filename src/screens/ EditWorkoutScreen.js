@@ -109,17 +109,10 @@ const EditWorkoutScreen = ({ navigation, route }) => {
               ]}
               onPress={() => setEditedWorkout((prev) => ({ ...prev, type }))}
             >
-              <Text
-                style={[
-                  styles.typeButtonText,
-                  {
-                    color:
-                      editedWorkout.type === type
-                        ? colors.inverseText
-                        : colors.text,
-                  },
-                ]}
-              >
+              <Text style={[
+                styles.typeButtonText,
+                editedWorkout.type === type && styles.typeButtonTextActive
+              ]}>
                 {type.charAt(0).toUpperCase() + type.slice(1)}
               </Text>
             </TouchableOpacity>
@@ -248,27 +241,18 @@ const EditWorkoutScreen = ({ navigation, route }) => {
           multiline
         />
 
-        {/* Original Date */}
-        <View
-          style={[
-            styles.originalDateContainer,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <Text style={[styles.originalDateLabel, { color: colors.subtext }]}>
-            Original Date:
-          </Text>
-          <Text style={[styles.originalDateValue, { color: colors.text }]}>
-            {workout.createdAt?.toDate
-              ? new Date(workout.createdAt.toDate()).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : 'Unknown date'}
+        {/* Original Date Display */}
+        <View style={styles.originalDateContainer}>
+          <Text style={styles.originalDateLabel}>Original Date:</Text>
+          <Text style={styles.originalDateValue}>
+            {new Date(workout.createdAt.toDate()).toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
           </Text>
         </View>
 
