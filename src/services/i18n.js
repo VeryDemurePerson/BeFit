@@ -3,6 +3,9 @@ import i18n from "i18n-js";
 import * as Localization from "expo-localization";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// Supported language codes in the app
+const SUPPORTED_LANGUAGES = ["en", "vi", "tl", "fr"];
+
 // Define translations
 const translations = {
   en: {
@@ -269,23 +272,304 @@ const translations = {
     deletedSuccessfully: "Xóa thành công!",
     updateSuccessfully: "Cập nhật thành công!",
   },
+  tl: {
+    // Auth screens
+    login: "Mag-login",
+    signUp: "Mag-sign up",
+    email: "Email",
+    password: "Password",
+    confirmPassword: "Kumpirmahin ang password",
+    fullName: "Buong pangalan",
+    age: "Edad",
+    weight: "Timbang (kg)",
+    height: "Taas (cm)",
+    alreadyHaveAccount: "May account ka na?",
+    dontHaveAccount: "Wala ka pang account?",
+    // Navigation
+    home: "Home",
+    workout: "Workout",
+    goals: "Mga layunin",
+    progress: "Progreso",
+    nutrition: "Nutrisyon",
+    profile: "Profile",
+    // Home Screen
+    welcome: "Maligayang pagdating",
+    todayStats: "Mga stats ngayong araw",
+    waterIntake: "Dami ng nainom na tubig",
+    calories: "Calories",
+    workouts: "Mga workout",
+    quickActions: "Mga mabilisang aksyon",
+    logWorkout: "I-log ang workout",
+    addMeal: "Magdagdag ng pagkain",
+    trackWater: "I-track ang tubig",
+    // Workout Screen
+    myWorkouts: "Mga workout ko",
+    addWorkout: "Magdagdag ng workout",
+    editWorkout: "I-edit ang workout",
+    deleteWorkout: "I-delete ang workout",
+    exercise: "Ehersisyo",
+    type: "Uri",
+    duration: "Tagal (minuto)",
+    calories_burned: "Calories na nasunog",
+    notes: "Mga tala",
+    save: "I-save",
+    cancel: "Kanselahin",
+    delete: "I-delete",
+    // Workout Types
+    cardio: "Cardio",
+    strength: "Lakas",
+    flexibility: "Flexibility",
+    sports: "Sports",
+    other: "Iba pa",
+    // Exercise Types
+    running: "Pagtakbo",
+    cycling: "Pagbibisikleta",
+    swimming: "Paglangoy",
+    walking: "Paglalakad",
+    pushups: "Push-up",
+    squats: "Squat",
+    lunges: "Lunges",
+    plank: "Plank",
+    yoga: "Yoga",
+    stretching: "Pag-uunat",
+    pilates: "Pilates",
+    basketball: "Basketball",
+    football: "Football",
+    tennis: "Tennis",
+    // Goals Screen
+    myGoals: "Mga layunin ko",
+    addGoal: "Magdagdag ng layunin",
+    editGoal: "I-edit ang layunin",
+    goalTitle: "Pamagat ng layunin",
+    targetValue: "Target na halaga",
+    currentValue: "Kasalukuyang halaga",
+    deadline: "Deadline",
+    completed: "Nakumpleto",
+    inProgress: "Ginagawa pa",
+    // Progress Screen
+    myProgress: "Progreso ko",
+    weeklyProgress: "Progreso lingguhan",
+    monthlyProgress: "Progreso buwanan",
+    totalWorkouts: "Kabuuang workout",
+    totalDuration: "Kabuuang tagal",
+    averageDuration: "Karaniwang tagal",
+    // Nutrition Screen
+    myNutrition: "Nutrisyon ko",
+    addMealBtn: "Magdagdag ng pagkain",
+    mealName: "Pangalan ng pagkain",
+    mealType: "Uri ng pagkain",
+    breakfast: "Almusal",
+    lunch: "Tanghalian",
+    dinner: "Hapunan",
+    snack: "Meryenda",
+    protein: "Protina (g)",
+    carbs: "Carbs (g)",
+    fats: "Taba (g)",
+    // Profile Screen
+    myProfile: "Profile ko",
+    editProfile: "I-edit ang profile",
+    accountInfo: "Impormasyon ng account",
+    statistics: "Mga istatistika",
+    settings: "Mga setting",
+    language: "Wika",
+    theme: "Tema",
+    darkMode: "Dark mode",
+    lightMode: "Light mode",
+    logout: "Mag-logout",
+    joinDate: "Petsa ng pagsali",
+    currentStreak: "Kasalukuyang streak",
+    days: "araw",
+    favoriteWorkout: "Paboritong workout",
+    waterGlasses: "Basong tubig",
+    changeAvatar: "Palitan ang avatar",
+    // Chatbot
+    aiCoach: "AI Coach",
+    askQuestion: "Magtanong sa akin ng kahit ano tungkol sa fitness...",
+    // Common
+    search: "Maghanap",
+    filter: "Salain",
+    sortBy: "Ayusin ayon sa",
+    date: "Petsa",
+    recent: "Pinakabago",
+    oldest: "Pinakaluma",
+    viewTutorial: "Tingnan ang tutorial",
+    watchVideo: "Manood ng video",
+    // Messages
+    success: "Tagumpay",
+    error: "Error",
+    loading: "Naglo-load...",
+    noData: "Walang data",
+    confirmDelete: "Sigurado ka bang gusto mong i-delete?",
+    savedSuccessfully: "Matagumpay na na-save!",
+    deletedSuccessfully: "Matagumpay na na-delete!",
+    updateSuccessfully: "Matagumpay na na-update!",
+  },
+  fr: {
+    // Auth screens
+    login: "Connexion",
+    signUp: "Créer un compte",
+    email: "E-mail",
+    password: "Mot de passe",
+    confirmPassword: "Confirmer le mot de passe",
+    fullName: "Nom complet",
+    age: "Âge",
+    weight: "Poids (kg)",
+    height: "Taille (cm)",
+    alreadyHaveAccount: "Vous avez déjà un compte ?",
+    dontHaveAccount: "Vous n’avez pas encore de compte ?",
+    // Navigation
+    home: "Accueil",
+    workout: "Entraînement",
+    goals: "Objectifs",
+    progress: "Progression",
+    nutrition: "Nutrition",
+    profile: "Profil",
+    // Home Screen
+    welcome: "Bienvenue",
+    todayStats: "Statistiques du jour",
+    waterIntake: "Apport en eau",
+    calories: "Calories",
+    workouts: "Séances",
+    quickActions: "Actions rapides",
+    logWorkout: "Enregistrer l’entraînement",
+    addMeal: "Ajouter un repas",
+    trackWater: "Suivre l’eau bue",
+    // Workout Screen
+    myWorkouts: "Mes entraînements",
+    addWorkout: "Ajouter un entraînement",
+    editWorkout: "Modifier l’entraînement",
+    deleteWorkout: "Supprimer l’entraînement",
+    exercise: "Exercice",
+    type: "Type",
+    duration: "Durée (min)",
+    calories_burned: "Calories brûlées",
+    notes: "Notes",
+    save: "Enregistrer",
+    cancel: "Annuler",
+    delete: "Supprimer",
+    // Workout Types
+    cardio: "Cardio",
+    strength: "Force",
+    flexibility: "Souplesse",
+    sports: "Sports",
+    other: "Autre",
+    // Exercise Types
+    running: "Course",
+    cycling: "Vélo",
+    swimming: "Natation",
+    walking: "Marche",
+    pushups: "Pompes",
+    squats: "Squats",
+    lunges: "Fentes",
+    plank: "Planche",
+    yoga: "Yoga",
+    stretching: "Étirements",
+    pilates: "Pilates",
+    basketball: "Basket-ball",
+    football: "Football",
+    tennis: "Tennis",
+    // Goals Screen
+    myGoals: "Mes objectifs",
+    addGoal: "Ajouter un objectif",
+    editGoal: "Modifier l’objectif",
+    goalTitle: "Titre de l’objectif",
+    targetValue: "Valeur cible",
+    currentValue: "Valeur actuelle",
+    deadline: "Date limite",
+    completed: "Terminé",
+    inProgress: "En cours",
+    // Progress Screen
+    myProgress: "Ma progression",
+    weeklyProgress: "Progression hebdomadaire",
+    monthlyProgress: "Progression mensuelle",
+    totalWorkouts: "Total des entraînements",
+    totalDuration: "Durée totale",
+    averageDuration: "Durée moyenne",
+    // Nutrition Screen
+    myNutrition: "Ma nutrition",
+    addMealBtn: "Ajouter un repas",
+    mealName: "Nom du repas",
+    mealType: "Type de repas",
+    breakfast: "Petit-déjeuner",
+    lunch: "Déjeuner",
+    dinner: "Dîner",
+    snack: "Collation",
+    protein: "Protéines (g)",
+    carbs: "Glucides (g)",
+    fats: "Lipides (g)",
+    // Profile Screen
+    myProfile: "Mon profil",
+    editProfile: "Modifier le profil",
+    accountInfo: "Informations du compte",
+    statistics: "Statistiques",
+    settings: "Paramètres",
+    language: "Langue",
+    theme: "Thème",
+    darkMode: "Mode sombre",
+    lightMode: "Mode clair",
+    logout: "Se déconnecter",
+    joinDate: "Date d’inscription",
+    currentStreak: "Série en cours",
+    days: "jours",
+    favoriteWorkout: "Entraînement préféré",
+    waterGlasses: "Verres d’eau",
+    changeAvatar: "Changer d’avatar",
+    // Chatbot
+    aiCoach: "Coach IA",
+    askQuestion: "Posez-moi vos questions sur le fitness…",
+    // Common
+    search: "Rechercher",
+    filter: "Filtrer",
+    sortBy: "Trier par",
+    date: "Date",
+    recent: "Le plus récent",
+    oldest: "Le plus ancien",
+    viewTutorial: "Voir le tutoriel",
+    watchVideo: "Regarder la vidéo",
+    // Messages
+    success: "Succès",
+    error: "Erreur",
+    loading: "Chargement...",
+    noData: "Aucune donnée disponible",
+    confirmDelete: "Voulez-vous vraiment supprimer ?",
+    savedSuccessfully: "Enregistré avec succès !",
+    deletedSuccessfully: "Supprimé avec succès !",
+    updateSuccessfully: "Mis à jour avec succès !",
+  },
 };
 
 // Set i18n configuration
 i18n.translations = translations;
 i18n.fallbacks = true;
+i18n.defaultLocale = "en";
+
+/**
+ * Map device locale (e.g. "en-US", "vi-VN", "fil-PH", "fr-CA") to one of our supported codes.
+ */
+const mapDeviceLocaleToAppLocale = (deviceLocale) => {
+  const lower = (deviceLocale || "").toLowerCase();
+
+  if (lower.startsWith("vi")) return "vi";
+  if (lower.startsWith("tl") || lower.startsWith("fil")) return "tl";
+  if (lower.startsWith("fr")) return "fr";
+  return "en";
+};
 
 // Function to initialize language
 export const initializeLanguage = async () => {
   try {
     const savedLanguage = await AsyncStorage.getItem("userLanguage");
-    if (savedLanguage) {
+
+    if (savedLanguage && SUPPORTED_LANGUAGES.includes(savedLanguage)) {
       i18n.locale = savedLanguage;
-    } else {
-      // Get device locale
-      const deviceLocale = Localization.locale;
-      i18n.locale = deviceLocale.startsWith("vi") ? "vi" : "en";
+      return;
     }
+
+    // Get device locale from expo-localization
+    const deviceLocale = Localization.locale;
+    const appLocale = mapDeviceLocaleToAppLocale(deviceLocale);
+
+    i18n.locale = appLocale;
   } catch (error) {
     console.error("Error initializing language:", error);
     i18n.locale = "en";
@@ -295,8 +579,12 @@ export const initializeLanguage = async () => {
 // Function to change language
 export const changeLanguage = async (languageCode) => {
   try {
-    i18n.locale = languageCode;
-    await AsyncStorage.setItem("userLanguage", languageCode);
+    const lang = SUPPORTED_LANGUAGES.includes(languageCode)
+      ? languageCode
+      : "en";
+
+    i18n.locale = lang;
+    await AsyncStorage.setItem("userLanguage", lang);
   } catch (error) {
     console.error("Error changing language:", error);
   }
@@ -305,4 +593,8 @@ export const changeLanguage = async (languageCode) => {
 // Function to get current language
 export const getCurrentLanguage = () => i18n.locale;
 
+// Optional convenience wrapper: i18n.t("key")
+export const t = (key, options) => i18n.t(key, options);
+
 export default i18n;
+// NOTE: This is a harmless no-op comment added for tracking purposes.
