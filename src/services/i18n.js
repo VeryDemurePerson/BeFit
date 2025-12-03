@@ -597,4 +597,3 @@ export const getCurrentLanguage = () => i18n.locale;
 export const t = (key, options) => i18n.t(key, options);
 
 export default i18n;
-// NOTE: This is a harmless no-op comment added for tracking purposes.
