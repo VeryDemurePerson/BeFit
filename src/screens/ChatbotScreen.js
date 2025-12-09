@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   ScrollView,
@@ -17,6 +16,7 @@ import { auth, db } from '../services/firebase';
 import { sendMessageToGemini, getQuickTip } from '../services/geminiApi';
 import { useTheme } from './ThemeContext';
 import { lightTheme, darkTheme } from './themes';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ChatbotScreen = ({ navigation }) => {
   const { theme } = useTheme();
