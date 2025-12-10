@@ -1,55 +1,303 @@
-
-import React, { useState, useEffect } from 'react';
+// App.js - FIXED VERSION
+import 'react-native-gesture-handler';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  ActivityIndicator,
+  Text,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+  SafeAreaView,
+} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './src/services/firebase';
+import { useTheme, ThemeProvider } from './src/screens/ThemeContext';
+import { lightTheme, darkTheme } from './src/screens/themes';
 
-
+// Auth screens
 import LoginScreen from './src/screens/LoginScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
+
+// Main app screens
 import HomeScreen from './src/screens/HomeScreen';
 import WorkoutScreen from './src/screens/WorkoutScreen';
+import ProgressScreen from './src/screens/ProgressScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import NutritionScreen from './src/screens/NutritionScreen';
+import WaterTrackerScreen from './src/screens/WaterTrackerScreen';
+import GoalsScreen from './src/screens/GoalsScreen';
+
+// Hidden / detail screens
 import AddWorkoutScreen from './src/screens/AddWorkoutScreen';
 import EditWorkoutScreen from './src/screens/EditWorkoutScreen';
-import ProgressScreen from './src/screens/ProgressScreen';
-import GoalsScreen from './src/screens/GoalsScreen';
-import EditGoalScreen from './src/screens/EditGoalScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import EditProfileScreen from './src/screens/EditProfileScreen';
-import NutritionScreen from './src/screens/NutritionScreen';
 import AddMealScreen from './src/screens/AddMealScreen';
+import EditGoalScreen from './src/screens/EditGoalScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
+
+// Gamification screen
+import AchievementsScreen from './src/screens/AchievementsScreen';
+
+// AI Chat
+import ChatbotScreen from './src/screens/ChatbotScreen';
+import FloatingChatButton from './src/components/FloatingChatButton';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const PRIMARY_TABS = ['Home', 'Workout', 'MoreCenterTab', 'Progress', 'Profile'];
 
-const TabIcon = ({ name, focused, color, size }) => {
-  const getIcon = () => {
-    switch (name) {
-      case 'Home': return '🏠';
-      case 'Workout': return '💪';
-      case 'Goals': return '🎯';
-      case 'Progress': return '📊';
-      case 'Profile': return '👤';
-      case 'Nutrition': return '🍎';
-      default: return '•';
+function BeFitTabBar({ state, descriptors, navigation, themeColors }) {
+  const [moreVisible, setMoreVisible] = useState(false);
+  const activeRouteName = state.routes[state.index].name;
+
+  const quickActions = [
+    { label: 'Nutrition', icon: 'fast-food-outline', screen: 'Nutrition' },
+    { label: 'Water tracker', icon: 'water-outline', screen: 'WaterTracker' },
+    { label: 'Goals', icon: 'flag-outline', screen: 'Goals' },
+    { label: 'Achievements', icon: 'trophy-outline', screen: 'Achievements' },
+  ];
+
+  const renderIcon = (routeName, focused) => {
+    const color = focused ? themeColors.accent : themeColors.subtext;
+    const size = 22;
+
+    switch (routeName) {
+      case 'Home':
+        return <Ionicons name="home-outline" size={size} color={color} />;
+      case 'Workout':
+        return <Ionicons name="barbell-outline" size={size} color={color} />;
+      case 'Progress':
+        return <Ionicons name="stats-chart-outline" size={size} color={color} />;
+      case 'Profile':
+        return <Ionicons name="person-outline" size={size} color={color} />;
+      case 'MoreCenterTab':
+        return (
+          <View style={styles.moreCircle}>
+            <Ionicons name="grid" size={20} color="#fff" />
+          </View>
+        );
+      default:
+        return null;
     }
   };
 
   return (
-    <Text style={{ 
-      fontSize: size || 20, 
-      color: focused ? color : '#8E8E93',
-      opacity: focused ? 1 : 0.6 
-    }}>
-      {getIcon()}
-    </Text>
-  );
-};
+    <>
+      <SafeAreaView
+        style={[
+          styles.tabBar,
+          {
+            backgroundColor: themeColors.card,
+            borderTopColor: themeColors.border,
+          },
+        ]}
+      >
+        {PRIMARY_TABS.map((routeName) => {
+          const route = state.routes.find((r) => r.name === routeName);
+          if (!route) return null;
 
+          const isFocused = activeRouteName === routeName;
+
+          return (
+            <TouchableOpacity
+              key={route.key ?? routeName}
+              onPress={() => {
+                if (routeName === 'MoreCenterTab') {
+                  setMoreVisible(true);
+                  return;
+                }
+                navigation.navigate(routeName);
+              }}
+              style={styles.tabButton}
+              activeOpacity={0.8}
+            >
+              {renderIcon(routeName, isFocused)}
+              {routeName !== 'MoreCenterTab' && (
+                <Text
+                  style={{
+                    fontSize: 11,
+                    marginTop: 2,
+                    color: isFocused ? themeColors.accent : themeColors.subtext,
+                  }}
+                >
+                  {routeName}
+                </Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </SafeAreaView>
+
+      {/* More / Quick Actions modal */}
+      <Modal
+        visible={moreVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMoreVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPressOut={() => setMoreVisible(false)}
+        >
+          <View
+            style={[
+              styles.moreCard,
+              {
+                backgroundColor: themeColors.card,
+                borderColor: themeColors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.moreTitle,
+                {
+                  color: themeColors.text,
+                },
+              ]}
+            >
+              Quick Actions
+            </Text>
+
+            {quickActions.map((item) => (
+              <TouchableOpacity
+                key={item.screen}
+                style={styles.moreItem}
+                onPress={() => {
+                  setMoreVisible(false);
+                  navigation.navigate(item.screen);
+                }}
+              >
+                <Ionicons
+                  name={item.icon}
+                  size={20}
+                  color={themeColors.accent}
+                />
+                <Text
+                  style={[
+                    styles.moreItemLabel,
+                    { color: themeColors.text },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+}
+
+function MainTabs() {
+  const { theme } = useTheme();
+  const themeColors = theme === 'light' ? lightTheme : darkTheme;
+  const [chatVisible, setChatVisible] = useState(false);
+
+  // CRITICAL FIX: Memoize the tabBar render function
+  // This prevents re-creating the function on every render
+  const renderTabBar = useCallback((props) => (
+    <BeFitTabBar {...props} themeColors={themeColors} />
+  ), [themeColors]);
+
+  return (
+    <>
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+        }}
+        tabBar={renderTabBar}
+      >
+        {/* Visible tabs */}
+        <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Workout" component={WorkoutScreen} />
+        <Tab.Screen
+          name="MoreCenterTab"
+          component={HomeScreen}
+          options={{ tabBarButton: () => null }}
+        />
+        <Tab.Screen name="Progress" component={ProgressScreen} />
+        <Tab.Screen name="Profile" component={ProfileScreen} />
+
+        {/* Hidden screens accessed via navigation */}
+        <Tab.Screen
+          name="Nutrition"
+          component={NutritionScreen}
+          options={{ tabBarButton: () => null }}
+        />
+        <Tab.Screen
+          name="WaterTracker"
+          component={WaterTrackerScreen}
+          options={{ tabBarButton: () => null }}
+        />
+        <Tab.Screen
+          name="Goals"
+          component={GoalsScreen}
+          options={{ tabBarButton: () => null }}
+        />
+        <Tab.Screen
+          name="AddWorkout"
+          component={AddWorkoutScreen}
+          options={{ tabBarButton: () => null }}
+        />
+        <Tab.Screen
+          name="EditWorkout"
+          component={EditWorkoutScreen}
+          options={{ tabBarButton: () => null }}
+        />
+        <Tab.Screen
+          name="AddMeal"
+          component={AddMealScreen}
+          options={{ tabBarButton: () => null }}
+        />
+        <Tab.Screen
+          name="EditGoal"
+          component={EditGoalScreen}
+          options={{ tabBarButton: () => null }}
+        />
+        <Tab.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          options={{ tabBarButton: () => null }}
+        />
+        <Tab.Screen
+          name="Achievements"
+          component={AchievementsScreen}
+          options={{ tabBarButton: () => null }}
+        />
+      </Tab.Navigator>
+
+      {/* Floating AI Chat Button */}
+      <FloatingChatButton onPress={() => setChatVisible(true)} />
+
+      {/* AI Chat overlay */}
+      {chatVisible && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          <ChatbotScreen
+            navigation={{
+              goBack: () => setChatVisible(false),
+            }}
+          />
+        </View>
+      )}
+    </>
+  );
+}
 
 function AuthStack() {
   return (
@@ -60,170 +308,37 @@ function AuthStack() {
   );
 }
 
-// Workout Stack (Workout list + Add/Edit workout)
-function WorkoutStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="WorkoutList" component={WorkoutScreen} />
-      <Stack.Screen
-        name="AddWorkout"
-        component={AddWorkoutScreen}
-        options={{
-          headerShown: false,
-          presentation: 'modal',
-        }}
-      />
-      <Stack.Screen
-        name="EditWorkout"
-        component={EditWorkoutScreen}
-        options={{
-          headerShown: false,
-          presentation: 'modal',
-        }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Goals Stack (Goals list + Edit goal)
-function GoalsStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="GoalsList" component={GoalsScreen} />
-      <Stack.Screen
-        name="EditGoal"
-        component={EditGoalScreen}
-        options={{
-          headerShown: false,
-          presentation: 'modal',
-        }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Profile Stack
-function ProfileStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
-      <Stack.Screen 
-        name="EditProfile" 
-        component={EditProfileScreen}
-        options={{
-          headerShown: false,
-          presentation: 'modal',
-        }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Nutrition Stack
-function NutritionStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="NutritionList" component={NutritionScreen} />
-      <Stack.Screen 
-        name="AddMeal" 
-        component={AddMealScreen}
-        options={{
-          headerShown: false,
-          presentation: 'modal',
-        }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Main App Tabs (after login) - FIXED VERSION
-function MainTabs() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => (
-          <TabIcon name={route.name} focused={focused} color={color} size={size} />
-        ),
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E5EA',
-          height: 60,
-          paddingBottom: 5,
-          paddingTop: 5,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '500',
-        },
-      })}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: 'Home',
-        }}
-      />
-      <Tab.Screen
-        name="Workout"
-        component={WorkoutStack}
-        options={{
-          tabBarLabel: 'Workout',
-        }}
-      />
-      <Tab.Screen
-        name="Goals"
-        component={GoalsStack}
-        options={{
-          tabBarLabel: 'Goals',
-        }}
-      />
-      <Tab.Screen
-        name="Progress"
-        component={ProgressScreen}
-        options={{
-          tabBarLabel: 'Progress',
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileStack}
-        options={{
-          tabBarLabel: 'Profile',
-        }}
-      />
-      <Tab.Screen
-        name="Nutrition"
-        component={NutritionStack}
-        options={{
-          tabBarLabel: 'Nutrition',
-        }}
-      />
-    </Tab.Navigator>
-  );
-}
-
-export default function App() {
+function AppContent() {
+  const { theme } = useTheme();
+  const themeColors = theme === 'light' ? lightTheme : darkTheme;
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setCheckingAuth(false);
     });
-
     return unsubscribe;
   }, []);
 
-  if (isLoading) {
+  if (checkingAuth) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View
+        style={[
+          styles.loadingContainer,
+          { backgroundColor: themeColors.background },
+        ]}
+      >
+        <ActivityIndicator size="large" color={themeColors.accent} />
+        <Text
+          style={[
+            styles.loadingText,
+            { color: themeColors.subtext },
+          ]}
+        >
+          Loading BeFit...
+        </Text>
       </View>
     );
   }
@@ -234,3 +349,74 @@ export default function App() {
     </NavigationContainer>
   );
 }
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  /* Loading screen */
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+  },
+
+  /* Navigation bar */
+  tabBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  /* Centered More button */
+  moreCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#5A67D8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  /* More popup modal */
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  moreCard: {
+    margin: 16,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+  },
+  moreTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  moreItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  moreItemLabel: {
+    marginLeft: 10,
+    fontSize: 14,
+  },
+});
